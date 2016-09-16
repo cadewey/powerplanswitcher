@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerPlanSwitcher", "PowerPlanSwitcher\PowerPlanSwitcher.csproj", "{5F3266CF-4856-44FD-A3EF-6B316647AF53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateChecker", "..\UpdateChecker\UpdateChecker\UpdateChecker.csproj", "{7FEF05A2-74B5-4F3B-98C5-92E6E82A4EDA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5F3266CF-4856-44FD-A3EF-6B316647AF53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F3266CF-4856-44FD-A3EF-6B316647AF53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F3266CF-4856-44FD-A3EF-6B316647AF53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F3266CF-4856-44FD-A3EF-6B316647AF53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FEF05A2-74B5-4F3B-98C5-92E6E82A4EDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FEF05A2-74B5-4F3B-98C5-92E6E82A4EDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FEF05A2-74B5-4F3B-98C5-92E6E82A4EDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FEF05A2-74B5-4F3B-98C5-92E6E82A4EDA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
