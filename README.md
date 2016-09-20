@@ -4,7 +4,7 @@ This light-weight (275 KB) system tray application allows for quick switching be
 
 ![](http://therefactory.bplaced.net/data/powerplanswitcher.gif)
 
-You can follow my <a href="http://goo.gl/KvKHze">development blog</a> on for the latest news on this and other projects of mine.
+You can follow my <a href="http://goo.gl/KvKHze">development blog</a> for the latest news on this and other projects of mine.
 
 ***
 
