@@ -35,7 +35,7 @@ namespace TheRefactory
             // check for new version
             if (UpdateChecker.IsUpdateAvailable(this, false,
                 Resources.urlCheckUpdate + UpdateChecker.GetUuid(typeof(SysTrayApp)),
-                UpdateChecker.GetAssemblyVersionAsInteger(), UpdateChecker.GetUuid(typeof(SysTrayApp))))
+                UpdateChecker.GetAssemblyVersionAsInteger(typeof(SysTrayApp)), UpdateChecker.GetUuid(typeof(SysTrayApp))))
                 _trayMenu.MenuItems.Add(rm.GetString("Update", Thread.CurrentThread.CurrentUICulture), OnUpdate);
             _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
 
@@ -63,7 +63,7 @@ namespace TheRefactory
         {
             UpdateChecker.IsUpdateAvailable(this, true,
                 Resources.urlCheckUpdate + UpdateChecker.GetUuid(typeof(SysTrayApp)),
-                UpdateChecker.GetAssemblyVersionAsInteger(), UpdateChecker.GetUuid(typeof(SysTrayApp)));
+                UpdateChecker.GetAssemblyVersionAsInteger(typeof(SysTrayApp)), UpdateChecker.GetUuid(typeof(SysTrayApp)));
         }
 
         private void NotifyIcon_Click(object sender, EventArgs e)
