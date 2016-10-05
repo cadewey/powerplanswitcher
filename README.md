@@ -1,8 +1,8 @@
 # Power Plan Switcher
 
-This light-weight (275 KB) system tray application allows for quick switching between Power Plans on Windows.
+This light-weight system tray application allows for quick switching between the configured power plans on Windows.
 
-![](http://therefactory.bplaced.net/data/powerplanswitcher.gif)
+![](http://therefactory.bplaced.net/data/powerplanswitcher2.gif)
 
 You can follow my <a href="http://goo.gl/KvKHze">development blog</a> for the latest news on this and other projects of mine.
 
