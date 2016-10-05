@@ -63,9 +63,29 @@ namespace TheRefactory.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        internal static System.Drawing.Icon _1474044465_battery {
+        internal static System.Drawing.Icon battery {
             get {
-                object obj = ResourceManager.GetObject("_1474044465_battery", resourceCulture);
+                object obj = ResourceManager.GetObject("battery", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon battery_green {
+            get {
+                object obj = ResourceManager.GetObject("battery_green", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon battery_red {
+            get {
+                object obj = ResourceManager.GetObject("battery_red", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

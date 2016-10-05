@@ -2,14 +2,13 @@
 {
     internal class PowerPlan
     {
-        public string guid { get; private set; }
-        public string name { get; private set; }
-
         public PowerPlan(string guid, string name)
         {
-            this.guid = guid;
-            this.name = name;
+            Guid = guid;
+            Name = name;
         }
 
+        public string Guid { get; private set; }
+        public string Name { get; private set; }
     }
 }
