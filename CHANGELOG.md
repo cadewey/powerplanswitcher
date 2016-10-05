@@ -7,6 +7,7 @@ Power Plan Switcher - Changelog
 * Refactored code to conform to C# style
 * Removed unused references
 * Cleaned up code
+* Fixed bug when checking for new update
 
 ### Version 1.0.0 - September 16, 2016
 
