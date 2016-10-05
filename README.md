@@ -12,7 +12,11 @@ You can follow my <a href="http://goo.gl/KvKHze">development blog</a> for the la
 
 You can download the latest version here.
 
-* [Power-Plan-Switcher-1.0.0.zip](https://github.com/frittatenbank/powerplanswitcher/releases/download/1.0.0/Power-Plan-Switcher-1.0.0.zip)
+* [Power-Plan-Switcher-1.0.1.zip](https://github.com/frittatenbank/powerplanswitcher/blob/master/PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true)
+
+Older binaries are listed here for historical reasons.
+
+* [Power-Plan-Switcher-1.0.0.zip](https://github.com/frittatenbank/powerplanswitcher/blob/master/PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.0.zip?raw=true)
 
 ***
 
