@@ -1,26 +1,30 @@
-# Power Plan Switcher
+# Power Plan Switcher ![appicon](PowerPlanSwitcher/battery.ico) <a href="https://www.youtube.com/channel/UCShL6kEbNc02XjA89zsrtDQ"><img src="https://www.youtube.com/yt/brand/media/image/YouTube-icon-full_color.png" height="32px" align="right"></a>
 
-This light-weight system tray application allows for quick switching between the configured power plans on Windows.
+*Switching between power plans on Windows was never easier.*
+
+[![version](https://img.shields.io/badge/version-1.0.1-2095ff.svg)](CHANGELOG.md) [![license](https://img.shields.io/badge/license-GPL--3.0-2095ff.svg)](LICENSE.md)
+
+You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for the latest news on this and other projects of mine.
+
+## Screencaptures
 
 ![](http://therefactory.bplaced.net/data/powerplanswitcher2.gif)
 
-You can follow my <a href="http://goo.gl/KvKHze">development blog</a> for the latest news on this and other projects of mine.
+## Download
 
-***
+You can download the latest version [here](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true)
 
-**DOWNLOAD**
+Older binaries are listed in the following for historical reasons.
 
-You can download the latest version here.
+* [Power-Plan-Switcher-1.0.0.zip](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.0.zip?raw=true)
 
-* [Power-Plan-Switcher-1.0.1.zip](https://github.com/frittatenbank/powerplanswitcher/blob/master/PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true)
+## License
 
-Older binaries are listed here for historical reasons.
+Copyright &copy; 2016 Christian DeTamble
 
-* [Power-Plan-Switcher-1.0.0.zip](https://github.com/frittatenbank/powerplanswitcher/blob/master/PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.0.zip?raw=true)
+Licensed under the GNU General Public License, Version 3.0. See [LICENSE](LICENSE) for details.
 
-***
-
-**LICENSE**
+    https://www.gnu.org/licenses/gpl-3.0.txt
 
 The battery icon is from the Tango icon set which is licensed under Public Domain.
 
