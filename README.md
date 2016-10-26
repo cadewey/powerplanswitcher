@@ -6,13 +6,11 @@
 
 You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for the latest news on this and other projects of mine.
 
-## Screencaptures
-
 ![](http://therefactory.bplaced.net/data/powerplanswitcher2.gif)
 
 ## Download
 
-You can download the latest version [here](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true)
+The latest version is always available [here](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true).
 
 Older binaries are listed in the following for historical reasons.
 
