@@ -16,7 +16,7 @@ You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for
 
 ## Download
 
-The latest version is always available [here](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.1.zip?raw=true).
+[Power-Plan-Switcher.zip](PowerPlanSwitcher/Publish/Power-Plan-Switcher.zip?raw=true)
 
 Older binaries are listed in the following for historical reasons.
 
