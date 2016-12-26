@@ -4,7 +4,7 @@
 
 [![version](https://img.shields.io/badge/version-1.0.1-2095ff.svg)](CHANGELOG.md) [![license](https://img.shields.io/badge/license-GPL--3.0-2095ff.svg)](LICENSE.md)
 
-This nifty little tool runs as a system trat application in the background and allows for a quick switching between power plans that are configured in Windows.
+This nifty little tool runs as a system tray application in the background and allows for a quick switching between power plans that are configured in Windows.
 
 For example, you can configure a power saver plan that reduces the CPU speed to 5% (as can be seen in the gif below) and quickly switch to it whenever you want to save some battery power.
 
