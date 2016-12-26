@@ -2,7 +2,10 @@
 
 *Switching between power plans on Windows was never easier.*
 
-[![version](https://img.shields.io/badge/version-1.0.1-2095ff.svg)](CHANGELOG.md) [![license](https://img.shields.io/badge/license-GPL--3.0-2095ff.svg)](LICENSE.md)
+[![version](https://img.shields.io/badge/version-1.0.1-2095ff.svg)](CHANGELOG.md)
+[![license](https://img.shields.io/badge/license-GPL--3.0-2095ff.svg)](LICENSE.md)
+[![download](https://img.shields.io/badge/download-zip-2095ff.svg)](PowerPlanSwitcher/Publish/Power-Plan-Switcher.zip?raw=true)
+[![download](https://img.shields.io/badge/download-tar.gz-2095ff.svg)](PowerPlanSwitcher/Publish/Power-Plan-Switcher.tar.gz?raw=true)
 
 This nifty little tool runs as a system tray application in the background and allows for a quick switching between power plans that are configured in Windows.
 
