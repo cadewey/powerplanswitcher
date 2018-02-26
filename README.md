@@ -1,4 +1,4 @@
-# Power Plan Switcher ![appicon](PowerPlanSwitcher/battery.ico) <a href="https://www.youtube.com/channel/UCShL6kEbNc02XjA89zsrtDQ"><img src="https://www.youtube.com/yt/brand/media/image/YouTube-icon-full_color.png" height="32px" align="right"></a>
+# Power Plan Switcher ![appicon](PowerPlanSwitcher/battery.ico) <a href="https://www.youtube.com/channel/UCShL6kEbNc02XjA89zsrtDQ"><img src="http://therefactory.bplaced.net/img/youtube_hover.png" height="32px" align="right"></a>
 
 *Switching between power plans on Windows was never easier.*
 
