@@ -2,7 +2,7 @@
 
 *Switching between power plans on Windows was never easier.*
 
-[![version](https://img.shields.io/badge/version-1.0.1-2095ff.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.1-2095ff.svg)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-GPL--3.0-2095ff.svg)](LICENSE.md)
 [![download](https://img.shields.io/badge/download-zip-2095ff.svg)](PowerPlanSwitcher/Publish/Power-Plan-Switcher.zip?raw=true)
 
@@ -18,11 +18,9 @@ You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for
 
 ## Download
 
-[Power-Plan-Switcher.zip](PowerPlanSwitcher/Publish/Power-Plan-Switcher.zip?raw=true)
+[Power-Plan-Switcher.zip](PowerPlanSwitcher/Releases/Power-Plan-Switcher.zip?raw=true)
 
-Older binaries are listed in the following for historical reasons.
-
-* [Power-Plan-Switcher-1.0.0.zip](PowerPlanSwitcher/Publish/Power-Plan-Switcher-1.0.0.zip?raw=true)
+[Older binaries for historical reasons](https://github.com/cdetamble/powerplanswitcher/releases)
 
 ## License
 

@@ -1,6 +1,10 @@
 Power Plan Switcher - Changelog
 =========
 
+### Version 1.1 - July 15, 2020
+
+* Fixed wrong icon colors
+
 ### Version 1.0.1 - October 5, 2016
 
 * Added new icons that indicate the currently active power plan
