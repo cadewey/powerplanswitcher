@@ -45,7 +45,7 @@ namespace TheRefactory
         }
 
         internal List<PowerPlan> PowerPlans { get; set; }
-        private PowerPlan ActivePlan { get; set; }
+        internal PowerPlan ActivePlan { get; set; }
         // index that points to currently active plan in guids and names arrays
 
         internal int GetIndexOfActivePlan()
@@ -87,11 +87,11 @@ namespace TheRefactory
             }
         }
 
-        /// <summary>
-        ///     Changes the system's power plan to the one specified by powerPlans[index].
-        /// </summary>
-        /// <param name="index"></param>
-        internal void SetPowerPlan(int index)
+		/// <summary>
+		///     Changes the system's power plan to the one specified by powerPlans[index].
+		/// </summary>
+		/// <param name="index"></param>
+		internal void SetPowerPlan(int index)
         {
             ActivePlan = PowerPlans[index];
             var process = new Process {StartInfo = _startInfo};

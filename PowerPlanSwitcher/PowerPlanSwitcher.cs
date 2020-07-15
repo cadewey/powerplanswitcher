@@ -19,6 +19,7 @@
 
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
@@ -31,12 +32,9 @@ namespace TheRefactory
 {
     public class SysTrayApp : Form
     {
-        private readonly Icon[] _icons =
-        {
-            new Icon(Resources.battery, 32, 32),
-            new Icon(Resources.battery_red, 32, 32),
-            new Icon(Resources.battery_green, 32, 32)
-        };
+        private readonly Icon batteryIcon = new Icon(Resources.battery, 32, 32);
+        private readonly Icon greenBatteryIcon = new Icon(Resources.battery_green, 32, 32);
+        private readonly Icon redBatteryIcon = new Icon(Resources.battery_red, 32, 32);
 
         private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
         private readonly NotifyIcon _trayIcon;
@@ -54,18 +52,13 @@ namespace TheRefactory
             _trayMenu.MenuItems[_powerPlanManager.GetIndexOfActivePlan()].DefaultItem = true;
             _trayMenu.MenuItems.Add("-");
 
-            // check for new version
-            if (UpdateChecker.IsUpdateAvailable(this, false,
-                Resources.urlCheckUpdate + UpdateChecker.GetUuid(typeof(SysTrayApp)),
-                UpdateChecker.GetAssemblyVersionAsInteger(typeof(SysTrayApp)), UpdateChecker.GetUuid(typeof(SysTrayApp))))
-                _trayMenu.MenuItems.Add(rm.GetString("Update", Thread.CurrentThread.CurrentUICulture), OnUpdate);
             _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
 
             // create systray icon
             _trayIcon = new NotifyIcon
             {
-                Text = rm.GetString("Powerplan") + @" Switcher",
-                Icon = _icons[_powerPlanManager.GetIndexOfActivePlan()]
+                Text = _powerPlanManager.ActivePlan.Name,
+                Icon = GetIcon(_powerPlanManager.ActivePlan)
             };
             _trayIcon.MouseDown += NotifyIcon_Click;
             _trayIcon.MouseClick += NotifyIcon_MouseClick;
@@ -75,17 +68,28 @@ namespace TheRefactory
             _trayIcon.Visible = true;
         }
 
-        [STAThread]
+		private Icon GetIcon(PowerPlan plan)
+		{
+			if (ContainsInsensitive(plan.Name, "high") || ContainsInsensitive(plan.Name, "performance"))
+			{
+                return redBatteryIcon;
+			}
+            else if (ContainsInsensitive(plan.Name, "save"))
+            {
+                return greenBatteryIcon;
+            }
+            return batteryIcon;
+        }
+
+        private bool ContainsInsensitive(string text, string searchTerm)
+		{
+            return CultureInfo.CurrentCulture.CompareInfo.IndexOf(text, searchTerm, CompareOptions.IgnoreCase) >= 0;
+        }
+
+		[STAThread]
         public static void Main()
         {
             Application.Run(new SysTrayApp());
-        }
-
-        private void OnUpdate(object sender, EventArgs e)
-        {
-            UpdateChecker.IsUpdateAvailable(this, true,
-                Resources.urlCheckUpdate + UpdateChecker.GetUuid(typeof(SysTrayApp)),
-                UpdateChecker.GetAssemblyVersionAsInteger(typeof(SysTrayApp)), UpdateChecker.GetUuid(typeof(SysTrayApp)));
         }
 
         private void NotifyIcon_Click(object sender, EventArgs e)
@@ -114,8 +118,9 @@ namespace TheRefactory
             if (sender.GetType() != typeof(MenuItem)) return;
             var menuItem = (MenuItem) sender;
             menuItem.DefaultItem = true;
+            _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[menuItem.Index]);
+            _trayIcon.Text = _powerPlanManager.PowerPlans[menuItem.Index].Name;
             _powerPlanManager.SetPowerPlan(menuItem.Index);
-            _trayIcon.Icon = _icons[_powerPlanManager.GetIndexOfActivePlan()];
         }
 
         private static void OnExit(object sender, EventArgs e)
