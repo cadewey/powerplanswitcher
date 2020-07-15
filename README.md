@@ -22,7 +22,7 @@ You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for
 
 Older binaries are listed in the following for historical reasons.
 
-* [Power-Plan-Switcher-1.0.0.zip](PowerPlanSwitcher/Releases/Power-Plan-Switcher-1.0.0.zip?raw=true)
+* [Power-Plan-Switcher-1.0.0.zip](PowerPlanSwitcher/Releases/Power-Plan-Switcher.zip?raw=true)
 
 ## License
 
