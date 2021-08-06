@@ -17,6 +17,7 @@
 
 #region
 
+using Microsoft.Win32;
 using System;
 using System.Drawing;
 using System.Globalization;
@@ -39,6 +40,7 @@ namespace TheRefactory
         private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenu _trayMenu = new ContextMenu();
+        private readonly string PersonalizeKey = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 
         public SysTrayApp()
         {
@@ -48,10 +50,13 @@ namespace TheRefactory
 
             // create a menu item for each found power plan
             foreach (var powerPlan in _powerPlanManager.PowerPlans)
+            {
                 _trayMenu.MenuItems.Add(powerPlan.Name, OnSelectPowerPlan);
-            _trayMenu.MenuItems[_powerPlanManager.GetIndexOfActivePlan()].DefaultItem = true;
+            }
             _trayMenu.MenuItems.Add("-");
-
+            _trayMenu.MenuItems.Add("Light", ActivateLightMode);
+            _trayMenu.MenuItems.Add("Dark", ActivateDarkMode);
+            _trayMenu.MenuItems.Add("-");
             _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
 
             // create systray icon
@@ -68,7 +73,26 @@ namespace TheRefactory
             _trayIcon.Visible = true;
         }
 
-		private Icon GetIcon(PowerPlan plan)
+        private bool HasDarkMode()
+        {
+            return (int)Registry.GetValue(PersonalizeKey, "AppsUseLightTheme", 1) == 0 ||
+               (int)Registry.GetValue(PersonalizeKey, "SystemUsesLightTheme", 1) == 0;
+        }
+
+
+        private void ActivateDarkMode(object sender, EventArgs e)
+        {
+            Registry.SetValue(PersonalizeKey, "AppsUseLightTheme", 0);
+            Registry.SetValue(PersonalizeKey, "SystemUsesLightTheme", 0);
+        }
+
+        private void ActivateLightMode(object sender, EventArgs e)
+        {
+            Registry.SetValue(PersonalizeKey, "AppsUseLightTheme", 1);
+            Registry.SetValue(PersonalizeKey, "SystemUsesLightTheme", 1);
+        }
+
+        private Icon GetIcon(PowerPlan plan)
 		{
 			if (ContainsInsensitive(plan.Name, "high") || ContainsInsensitive(plan.Name, "performance"))
 			{
@@ -89,13 +113,28 @@ namespace TheRefactory
 		[STAThread]
         public static void Main()
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new SysTrayApp());
         }
 
         private void NotifyIcon_Click(object sender, EventArgs e)
         {
             _powerPlanManager.LoadPowerPlans();
-            _trayMenu.MenuItems[_powerPlanManager.GetIndexOfActivePlan()].DefaultItem = true;
+            var hasDarkMode = HasDarkMode();
+            var activePlanIndex = _powerPlanManager.GetIndexOfActivePlan();
+            for (int i = 0; i < _trayMenu.MenuItems.Count; i++)
+            {
+                var item = _trayMenu.MenuItems[i];
+                if (i == activePlanIndex || item.Text == "Dark" && hasDarkMode || item.Text == "Light" && !hasDarkMode)
+                {
+                    item.Checked = true;
+                }
+                else
+                {
+                    item.Checked = false;
+                }
+            }
         }
 
         private void NotifyIcon_MouseClick(object sender, MouseEventArgs e)
@@ -117,7 +156,6 @@ namespace TheRefactory
         {
             if (sender.GetType() != typeof(MenuItem)) return;
             var menuItem = (MenuItem) sender;
-            menuItem.DefaultItem = true;
             _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[menuItem.Index]);
             _trayIcon.Text = _powerPlanManager.PowerPlans[menuItem.Index].Name;
             _powerPlanManager.SetPowerPlan(menuItem.Index);
