@@ -24,17 +24,15 @@ using System.Reflection;
 using System.Resources;
 using System.Threading;
 using System.Windows.Forms;
-using TheRefactory.Properties;
+using PowerPlanSwitcher.Properties;
 
 #endregion
 
-namespace TheRefactory
+namespace PowerPlanSwitcher
 {
     public class SysTrayApp : Form
     {
-        private readonly Icon batteryIcon = new Icon(Resources.battery, 32, 32);
-        private readonly Icon greenBatteryIcon = new Icon(Resources.battery_green, 32, 32);
-        private readonly Icon redBatteryIcon = new Icon(Resources.battery_red, 32, 32);
+        private readonly Icon flatBatteryIcon = new Icon(Resources.battery_512, 32, 32);
 
         private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
         private readonly NotifyIcon _trayIcon;
@@ -126,15 +124,15 @@ namespace TheRefactory
 
         private Icon GetIcon(PowerPlan plan)
 		{
-			if (ContainsInsensitive(plan.Name, "high") || ContainsInsensitive(plan.Name, "performance"))
+			/*if (ContainsInsensitive(plan.Name, "high") || ContainsInsensitive(plan.Name, "performance"))
 			{
                 return redBatteryIcon;
 			}
             else if (ContainsInsensitive(plan.Name, "save"))
             {
                 return greenBatteryIcon;
-            }
-            return batteryIcon;
+            }*/
+            return flatBatteryIcon;
         }
 
         private bool ContainsInsensitive(string text, string searchTerm)

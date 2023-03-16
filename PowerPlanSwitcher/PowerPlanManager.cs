@@ -25,7 +25,7 @@ using System.Text;
 
 #endregion
 
-namespace TheRefactory
+namespace PowerPlanSwitcher
 {
     public class PowerPlanManager
     {

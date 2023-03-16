@@ -9,9 +9,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Power Plan Switcher")]
 [assembly: AssemblyDescription("This light-weight system tray application allows for quick switching between the configured power plans on Windows.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("The Refactory")]
 [assembly: AssemblyProduct("Power Plan Switcher")]
-[assembly: AssemblyCopyright("Copyright © The Refactory 2016")]
+[assembly: AssemblyCopyright("Copyright © The Refactory 2016, cadewey 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -36,6 +35,6 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 [assembly: NeutralResourcesLanguage("en-US")]
