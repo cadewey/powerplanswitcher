@@ -199,6 +199,10 @@ namespace TheRefactory
             _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[keyId]);
             _trayIcon.Text = _powerPlanManager.PowerPlans[keyId].Name;
             _powerPlanManager.SetPowerPlan(keyId);
+
+            _trayIcon.BalloonTipTitle = "Power Plan Changed";
+            _trayIcon.BalloonTipText = $"Switched to {_trayIcon.Text}";
+            _trayIcon.ShowBalloonTip(2000);
         }
 
         private static void OnExit(object sender, EventArgs e)
