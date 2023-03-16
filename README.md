@@ -26,7 +26,7 @@ Modifications in this fork are copyright &copy; 2023 cadewey
 
 ***
 
-Licensed under the GNU General Public License, Version 3.0. See [LICENSE](LICENSE) for details.
+Licensed under the GNU General Public License, Version 3.0. See [LICENSE.md](LICENSE.md) for details.
 
     https://www.gnu.org/licenses/gpl-3.0.txt
 
