@@ -50,7 +50,7 @@ namespace PowerPlanSwitcher
             // create a menu item for each found power plan
             foreach (var powerPlan in _powerPlanManager.PowerPlans)
             {
-                if (_hotkeyManager.RegisterHotKey(_trayMenu.MenuItems.Count, (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
+                if (!_hotkeyManager.RegisterHotKey(_trayMenu.MenuItems.Count, (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
                 {
                     MessageBox.Show($"Couldn't register hotkey for profile at index {_trayMenu.MenuItems.Count}");
                 }
