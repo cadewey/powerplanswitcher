@@ -19,13 +19,13 @@ namespace PowerPlanSwitcher
 {
     internal class PowerPlan
     {
-        public PowerPlan(string guid, string name)
+        public PowerPlan(System.Guid guid, string name)
         {
             Guid = guid;
             Name = name;
         }
 
-        public string Guid { get; private set; }
+        public System.Guid Guid { get; private set; }
         public string Name { get; private set; }
     }
 }

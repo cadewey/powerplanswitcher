@@ -19,9 +19,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 
 #endregion
 
@@ -29,19 +27,44 @@ namespace PowerPlanSwitcher
 {
     public class PowerPlanManager
     {
-        private readonly ProcessStartInfo _startInfo = new ProcessStartInfo("cmd")
+        enum PowerDataAccessor : uint
         {
-            WindowStyle = ProcessWindowStyle.Hidden,
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            CreateNoWindow = true
-        };
+            ACCESS_SCHEME = 16,
+            ACCESS_SUBGROUP = 17,
+            ACCESS_INDIVIDUAL_SETTING = 18,
+            ACCESS_ACTIVE_SCHEME = 19,
+            ACCESS_CREATE_SCHEME = 20
+        }
+
+        [DllImport("powrprof.dll")]
+        static extern uint PowerEnumerate(
+            IntPtr rootPowerKey,
+            IntPtr schemeGuid,
+            IntPtr subGroupOfPowerSettingsGuid,
+            PowerDataAccessor accessFlags,
+            uint index,
+            IntPtr buffer,
+            ref uint bufferSize);
+
+        [DllImport("powrprof.dll")]
+        static extern uint PowerReadFriendlyName(
+            IntPtr rootPowerKey,
+            IntPtr schemeGuid,
+            IntPtr subGroupOfPowerSettingGuid,
+            IntPtr powerSettingGuid,
+            IntPtr buffer,
+            ref uint bufferSize);
+
+        [DllImport("powrprof.dll")]
+        static extern uint PowerSetActiveScheme(IntPtr userRootPowerKey, ref Guid schemeGuid);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerGetActiveScheme(IntPtr userRootPowerKey, ref IntPtr activePolicyGuid);
 
         internal PowerPlanManager()
         {
-            PowerPlans = new List<PowerPlan>();
             LoadPowerPlans();
+            LoadActivePlan();
         }
 
         internal List<PowerPlan> PowerPlans { get; set; }
@@ -50,64 +73,102 @@ namespace PowerPlanSwitcher
 
         internal int GetIndexOfActivePlan()
         {
-            return PowerPlans.IndexOf(ActivePlan);
+            return PowerPlans.FindIndex(p => p.Guid == ActivePlan.Guid);
+        }
+
+        internal void LoadPowerPlans()
+        {
+            PowerPlans = new List<PowerPlan>();
+
+            IntPtr ptrPlanGuid;
+            uint bufferSize = 16; // Size of System.Guid
+
+            uint index = 0;
+            uint res = 0;
+
+            while (res == 0)
+            {
+                ptrPlanGuid = Marshal.AllocHGlobal((int)bufferSize);
+
+                try
+                {
+                    res = PowerEnumerate(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, PowerDataAccessor.ACCESS_SCHEME, index, ptrPlanGuid, ref bufferSize);
+
+                    if (res == 259)
+                        break; // no more data
+
+                    if (res != 0)
+                    {
+                        throw new COMException("Error occurred while enumerating power schemes. Win32 error code: " + res);
+                    }
+
+                    Guid guid = Marshal.PtrToStructure<Guid>(ptrPlanGuid);
+                    string name = GetPlanName(ptrPlanGuid);
+
+                    PowerPlans.Add(new PowerPlan(guid, name));
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(ptrPlanGuid);
+                }
+
+                index++;
+            }
+        }
+
+        private void LoadActivePlan()
+        {
+            IntPtr ptrActiveGuid = IntPtr.Zero;
+            uint res = PowerGetActiveScheme(IntPtr.Zero, ref ptrActiveGuid);
+            if (res == 0)
+            {
+                Guid guid = Marshal.PtrToStructure<Guid>(ptrActiveGuid);
+                string planName = GetPlanName(ptrActiveGuid);
+
+                Marshal.FreeHGlobal(ptrActiveGuid);
+
+                ActivePlan = new PowerPlan(guid, planName);
+            }
+            else
+            {
+                throw new Exception("Error reading current power scheme. Native Win32 error code = " + res);
+            }
+        }
+
+        private string GetPlanName(IntPtr ptrPlanGuid)
+        {
+            uint buffSize = 0;
+            uint res = PowerReadFriendlyName(IntPtr.Zero, ptrPlanGuid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref buffSize);
+            if (res == 0)
+            {
+                IntPtr ptrName = Marshal.AllocHGlobal((int)buffSize);
+                res = PowerReadFriendlyName(IntPtr.Zero, ptrPlanGuid, IntPtr.Zero, IntPtr.Zero, ptrName, ref buffSize);
+                if (res == 0)
+                {
+                    string name = Marshal.PtrToStringUni(ptrName);
+                    Marshal.FreeHGlobal(ptrName);
+
+                    return name;
+                }
+                Marshal.FreeHGlobal(ptrName);
+            }
+
+            throw new Exception("Error reading power scheme name. Native Win32 error code = " + res);
         }
 
         /// <summary>
-        ///     Retrieves a list of available power plans and determines the currently active one.
+        ///     Changes the system's power plan to the one specified by powerPlans[index].
         /// </summary>
-        internal void LoadPowerPlans()
-        {
-            string output;
-            // use the powercfg cmd tool to determine existing powerplans and the currently active one.
-            using (var process = new Process { StartInfo = _startInfo })
-            {
-                process.Start();
-                process.StandardInput.WriteLine("powercfg /L");
-                process.StandardInput.WriteLine("exit");
-
-                using (var utf8Reader = new StreamReader(process.StandardOutput.BaseStream, Encoding.GetEncoding(437)))
-                {
-                    Console.WriteLine(utf8Reader.CurrentEncoding);
-                    output = utf8Reader.ReadToEnd();
-                    Console.WriteLine(output);
-                    utf8Reader.Close();
-                }
-            }
-
-            // parse the output from powercfg
-            PowerPlans.Clear();
-
-            foreach (var line in output.Split('\n'))
-            {
-                if ((line.Trim().Length == 0) || !line.Contains("GUID"))
-                    continue;
-
-                var guid = line.Substring(line.IndexOf(':') + 2).Remove(36);
-                var name = line.Substring(line.IndexOf('(')).Replace('*', ' ').Trim();
-                var powerPlan = new PowerPlan(guid, name.Replace('(', ' ').Replace(')', ' ').Trim());
-                PowerPlans.Add(powerPlan);
-
-                if (line.Contains("*"))
-                    ActivePlan = powerPlan;
-            }
-        }
-
-		/// <summary>
-		///     Changes the system's power plan to the one specified by powerPlans[index].
-		/// </summary>
-		/// <param name="index"></param>
-		internal void SetPowerPlan(int index)
+        /// <param name="index"></param>
+        internal void SetPowerPlan(int index)
         {
             ActivePlan = PowerPlans[index];
+            Guid planGuid = ActivePlan.Guid;
 
-            using (var process = new Process { StartInfo = _startInfo })
-            {
-                process.Start();
-                process.StandardInput.WriteLine("powercfg /SETACTIVE " + ActivePlan.Guid);
-                process.StandardInput.WriteLine("exit");
-                process.StandardOutput.ReadToEnd();
-            }
+            uint res = PowerSetActiveScheme(IntPtr.Zero, ref planGuid);
+            
+            if (res != 0) 
+                throw new COMException($"Error occurred. Win32 error code: {res}");
         }
     }
 }
