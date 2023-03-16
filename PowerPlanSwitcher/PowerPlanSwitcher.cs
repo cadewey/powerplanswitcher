@@ -17,7 +17,6 @@
 
 #region
 
-using Microsoft.Win32;
 using System;
 using System.Drawing;
 using System.Globalization;
@@ -40,7 +39,54 @@ namespace TheRefactory
         private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenu _trayMenu = new ContextMenu();
-        private readonly string PersonalizeKey = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        const int WM_HOTKEY = 0x0312;
+
+        enum KeyModifier
+        {
+            None = 0,
+            Alt = 1,
+            Control = 2,
+            Shift = 4,
+            WinKey = 8
+        }
+
+        public sealed class HotkeyManager : NativeWindow, IDisposable
+        {
+            private Action<int> _onHotKeyPressed;
+
+            public HotkeyManager(Action<int> onHotKeyPressed)
+            {
+                CreateHandle(new CreateParams());
+                _onHotKeyPressed = onHotKeyPressed;
+            }
+
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == WM_HOTKEY)
+                {
+                    if (_onHotKeyPressed != null)
+                    {
+                        // The ID of the hotkey that was pressed, which in our case maps to the index of the profile requested
+                        _onHotKeyPressed(m.WParam.ToInt32());
+                    }
+                }
+
+                base.WndProc(ref m);
+            }
+
+            public void Dispose()
+            {
+                DestroyHandle();
+            }
+        }
+
+        private readonly HotkeyManager _hotkeyManager;
 
         public SysTrayApp()
         {
@@ -48,15 +94,20 @@ namespace TheRefactory
             Console.WriteLine(@"The current culture is {0}", Thread.CurrentThread.CurrentUICulture);
             var rm = new ResourceManager("TheRefactory.Properties.Resources", typeof(SysTrayApp).Assembly);
 
+            _hotkeyManager = new HotkeyManager(OnHotKeyPressed);
+
             // create a menu item for each found power plan
             foreach (var powerPlan in _powerPlanManager.PowerPlans)
             {
-                _trayMenu.MenuItems.Add(powerPlan.Name, OnSelectPowerPlan);
+                if (!RegisterHotKey(_hotkeyManager.Handle, _trayMenu.MenuItems.Count, (int)(KeyModifier.Alt | KeyModifier.Shift), (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
+                {
+                    MessageBox.Show($"Couldn't register hotkey for profile at index {_trayMenu.MenuItems.Count}");
+                }
+
+                _trayMenu.MenuItems.Add($"{_trayMenu.MenuItems.Count + 1}: {powerPlan.Name}", OnSelectPowerPlan);
             }
             _trayMenu.MenuItems.Add("-");
-            _trayMenu.MenuItems.Add("Light", ActivateLightMode);
-            _trayMenu.MenuItems.Add("Dark", ActivateDarkMode);
-            _trayMenu.MenuItems.Add("-");
+            _trayMenu.MenuItems.Add("Power Options", (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
             _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
 
             // create systray icon
@@ -71,25 +122,6 @@ namespace TheRefactory
             // add menu to systray icon
             _trayIcon.ContextMenu = _trayMenu;
             _trayIcon.Visible = true;
-        }
-
-        private bool HasDarkMode()
-        {
-            return (int)Registry.GetValue(PersonalizeKey, "AppsUseLightTheme", 1) == 0 ||
-               (int)Registry.GetValue(PersonalizeKey, "SystemUsesLightTheme", 1) == 0;
-        }
-
-
-        private void ActivateDarkMode(object sender, EventArgs e)
-        {
-            Registry.SetValue(PersonalizeKey, "AppsUseLightTheme", 0);
-            Registry.SetValue(PersonalizeKey, "SystemUsesLightTheme", 0);
-        }
-
-        private void ActivateLightMode(object sender, EventArgs e)
-        {
-            Registry.SetValue(PersonalizeKey, "AppsUseLightTheme", 1);
-            Registry.SetValue(PersonalizeKey, "SystemUsesLightTheme", 1);
         }
 
         private Icon GetIcon(PowerPlan plan)
@@ -121,12 +153,12 @@ namespace TheRefactory
         private void NotifyIcon_Click(object sender, EventArgs e)
         {
             _powerPlanManager.LoadPowerPlans();
-            var hasDarkMode = HasDarkMode();
+
             var activePlanIndex = _powerPlanManager.GetIndexOfActivePlan();
             for (int i = 0; i < _trayMenu.MenuItems.Count; i++)
             {
                 var item = _trayMenu.MenuItems[i];
-                if (i == activePlanIndex || item.Text == "Dark" && hasDarkMode || item.Text == "Light" && !hasDarkMode)
+                if (i == activePlanIndex)
                 {
                     item.Checked = true;
                 }
@@ -149,6 +181,7 @@ namespace TheRefactory
         {
             Visible = false; // hide form window
             ShowInTaskbar = false; // remove from taskbar
+
             base.OnLoad(e);
         }
 
@@ -161,6 +194,13 @@ namespace TheRefactory
             _powerPlanManager.SetPowerPlan(menuItem.Index);
         }
 
+        private void OnHotKeyPressed(int keyId)
+        {
+            _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[keyId]);
+            _trayIcon.Text = _powerPlanManager.PowerPlans[keyId].Name;
+            _powerPlanManager.SetPowerPlan(keyId);
+        }
+
         private static void OnExit(object sender, EventArgs e)
         {
             Application.Exit();
@@ -169,7 +209,16 @@ namespace TheRefactory
         protected override void Dispose(bool isDisposing)
         {
             if (isDisposing)
+            {
+                for (int i = 0; i < _trayMenu.MenuItems.Count; ++i)
+                {
+                    UnregisterHotKey(_hotkeyManager.Handle, i);
+                }
+
+                _hotkeyManager.Dispose();
                 _trayIcon.Dispose();
+            }
+
             base.Dispose(isDisposing);
         }
     }

@@ -58,20 +58,26 @@ namespace TheRefactory
         /// </summary>
         internal void LoadPowerPlans()
         {
+            string output;
             // use the powercfg cmd tool to determine existing powerplans and the currently active one.
-            var process = new Process {StartInfo = _startInfo};
-            process.Start();
-            process.StandardInput.WriteLine("powercfg /L");
-            process.StandardInput.WriteLine("exit");
-            var utf8Reader = new StreamReader(process.StandardOutput.BaseStream, Encoding.GetEncoding(437));
-            Console.WriteLine(utf8Reader.CurrentEncoding);
-            var output = utf8Reader.ReadToEnd();
-            Console.WriteLine(output);
-            utf8Reader.Close();
-            process.Dispose();
+            using (var process = new Process { StartInfo = _startInfo })
+            {
+                process.Start();
+                process.StandardInput.WriteLine("powercfg /L");
+                process.StandardInput.WriteLine("exit");
+
+                using (var utf8Reader = new StreamReader(process.StandardOutput.BaseStream, Encoding.GetEncoding(437)))
+                {
+                    Console.WriteLine(utf8Reader.CurrentEncoding);
+                    output = utf8Reader.ReadToEnd();
+                    Console.WriteLine(output);
+                    utf8Reader.Close();
+                }
+            }
 
             // parse the output from powercfg
             PowerPlans.Clear();
+
             foreach (var line in output.Split('\n'))
             {
                 if ((line.Trim().Length == 0) || !line.Contains("GUID"))
@@ -94,12 +100,14 @@ namespace TheRefactory
 		internal void SetPowerPlan(int index)
         {
             ActivePlan = PowerPlans[index];
-            var process = new Process {StartInfo = _startInfo};
-            process.Start();
-            process.StandardInput.WriteLine("powercfg /SETACTIVE " + ActivePlan.Guid);
-            process.StandardInput.WriteLine("exit");
-            process.StandardOutput.ReadToEnd();
-            process.Dispose();
+
+            using (var process = new Process { StartInfo = _startInfo })
+            {
+                process.Start();
+                process.StandardInput.WriteLine("powercfg /SETACTIVE " + ActivePlan.Guid);
+                process.StandardInput.WriteLine("exit");
+                process.StandardOutput.ReadToEnd();
+            }
         }
     }
 }
