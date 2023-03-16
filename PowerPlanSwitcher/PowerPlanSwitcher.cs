@@ -19,7 +19,6 @@
 
 using System;
 using System.Drawing;
-using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
@@ -38,52 +37,6 @@ namespace PowerPlanSwitcher
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenu _trayMenu = new ContextMenu();
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-        const int WM_HOTKEY = 0x0312;
-
-        enum KeyModifier
-        {
-            None = 0,
-            Alt = 1,
-            Control = 2,
-            Shift = 4,
-            WinKey = 8
-        }
-
-        public sealed class HotkeyManager : NativeWindow, IDisposable
-        {
-            private Action<int> _onHotKeyPressed;
-
-            public HotkeyManager(Action<int> onHotKeyPressed)
-            {
-                CreateHandle(new CreateParams());
-                _onHotKeyPressed = onHotKeyPressed;
-            }
-
-            protected override void WndProc(ref Message m)
-            {
-                if (m.Msg == WM_HOTKEY)
-                {
-                    if (_onHotKeyPressed != null)
-                    {
-                        // The ID of the hotkey that was pressed, which in our case maps to the index of the profile requested
-                        _onHotKeyPressed(m.WParam.ToInt32());
-                    }
-                }
-
-                base.WndProc(ref m);
-            }
-
-            public void Dispose()
-            {
-                DestroyHandle();
-            }
-        }
-
         private readonly HotkeyManager _hotkeyManager;
 
         public SysTrayApp()
@@ -97,7 +50,7 @@ namespace PowerPlanSwitcher
             // create a menu item for each found power plan
             foreach (var powerPlan in _powerPlanManager.PowerPlans)
             {
-                if (!RegisterHotKey(_hotkeyManager.Handle, _trayMenu.MenuItems.Count, (int)(KeyModifier.Alt | KeyModifier.Shift), (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
+                if (_hotkeyManager.RegisterHotKey(_trayMenu.MenuItems.Count, (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
                 {
                     MessageBox.Show($"Couldn't register hotkey for profile at index {_trayMenu.MenuItems.Count}");
                 }
@@ -124,20 +77,7 @@ namespace PowerPlanSwitcher
 
         private Icon GetIcon(PowerPlan plan)
 		{
-			/*if (ContainsInsensitive(plan.Name, "high") || ContainsInsensitive(plan.Name, "performance"))
-			{
-                return redBatteryIcon;
-			}
-            else if (ContainsInsensitive(plan.Name, "save"))
-            {
-                return greenBatteryIcon;
-            }*/
             return flatBatteryIcon;
-        }
-
-        private bool ContainsInsensitive(string text, string searchTerm)
-		{
-            return CultureInfo.CurrentCulture.CompareInfo.IndexOf(text, searchTerm, CompareOptions.IgnoreCase) >= 0;
         }
 
 		[STAThread]
@@ -185,11 +125,12 @@ namespace PowerPlanSwitcher
 
         private void OnSelectPowerPlan(object sender, EventArgs e)
         {
-            if (sender.GetType() != typeof(MenuItem)) return;
-            var menuItem = (MenuItem) sender;
-            _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[menuItem.Index]);
-            _trayIcon.Text = _powerPlanManager.PowerPlans[menuItem.Index].Name;
-            _powerPlanManager.SetPowerPlan(menuItem.Index);
+            if (sender is MenuItem menuItem)
+            {
+                _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[menuItem.Index]);
+                _trayIcon.Text = _powerPlanManager.PowerPlans[menuItem.Index].Name;
+                _powerPlanManager.SetPowerPlan(menuItem.Index);
+            }
         }
 
         private void OnHotKeyPressed(int keyId)
@@ -212,13 +153,8 @@ namespace PowerPlanSwitcher
         {
             if (isDisposing)
             {
-                for (int i = 0; i < _trayMenu.MenuItems.Count; ++i)
-                {
-                    UnregisterHotKey(_hotkeyManager.Handle, i);
-                }
-
-                _hotkeyManager.Dispose();
-                _trayIcon.Dispose();
+                _hotkeyManager?.Dispose();
+                _trayIcon?.Dispose();
             }
 
             base.Dispose(isDisposing);

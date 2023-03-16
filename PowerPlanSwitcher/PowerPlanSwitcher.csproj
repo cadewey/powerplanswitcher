@@ -94,6 +94,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HotkeyManager.cs" />
     <Compile Include="PowerPlan.cs" />
     <Compile Include="PowerPlanManager.cs" />
     <Compile Include="PowerPlanSwitcher.cs">
