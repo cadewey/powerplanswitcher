@@ -43,7 +43,7 @@ namespace PowerPlanSwitcher
         {
             // init needed vars
             Console.WriteLine(@"The current culture is {0}", Thread.CurrentThread.CurrentUICulture);
-            var rm = new ResourceManager("TheRefactory.Properties.Resources", typeof(SysTrayApp).Assembly);
+            var rm = new ResourceManager("PowerPlanSwitcher.Properties.Resources", typeof(SysTrayApp).Assembly);
 
             _hotkeyManager = new HotkeyManager(OnHotKeyPressed);
 
