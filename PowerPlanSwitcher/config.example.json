@@ -1,0 +1,25 @@
+{
+  "gpus": [
+    {
+      "type": "nvml",
+      "config": {
+        "deviceIndex": 0,
+        "availablePowerScaling": [ 0.5, 0.75, 1.0 ],
+        "planAutoScaling": [
+          {
+            "planIndex": 0,
+            "scaling": 0.5
+          },
+          {
+            "planIndex": 1,
+            "scaling": 0.75
+          },
+          {
+            "planIndex": 2,
+            "scaling": 1.0
+          }
+        ]
+      }
+    }
+  ]
+}

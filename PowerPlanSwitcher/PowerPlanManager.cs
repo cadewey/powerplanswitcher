@@ -59,7 +59,7 @@ namespace PowerPlanSwitcher
         static extern uint PowerSetActiveScheme(IntPtr userRootPowerKey, ref Guid schemeGuid);
 
         [DllImport("powrprof.dll")]
-        public static extern uint PowerGetActiveScheme(IntPtr userRootPowerKey, ref IntPtr activePolicyGuid);
+        static extern uint PowerGetActiveScheme(IntPtr userRootPowerKey, ref IntPtr activePolicyGuid);
 
         internal PowerPlanManager()
         {

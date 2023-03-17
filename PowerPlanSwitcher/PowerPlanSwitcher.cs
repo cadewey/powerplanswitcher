@@ -18,12 +18,17 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 using PowerPlanSwitcher.Properties;
+using PowerPlanSwitcher.Nvml;
 
 #endregion
 
@@ -37,7 +42,9 @@ namespace PowerPlanSwitcher
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenu _trayMenu = new ContextMenu();
 
-        private readonly HotkeyManager _hotkeyManager;
+        private HotkeyManager _hotkeyManager;
+
+        private readonly List<IGpuManager> _gpuManagers = new List<IGpuManager>();
 
         public SysTrayApp()
         {
@@ -45,18 +52,9 @@ namespace PowerPlanSwitcher
             Console.WriteLine(@"The current culture is {0}", Thread.CurrentThread.CurrentUICulture);
             var rm = new ResourceManager("PowerPlanSwitcher.Properties.Resources", typeof(SysTrayApp).Assembly);
 
-            _hotkeyManager = new HotkeyManager(OnHotKeyPressed);
+            InitializePowerPlans();
+            InitializeGpuConfigs();
 
-            // create a menu item for each found power plan
-            foreach (var powerPlan in _powerPlanManager.PowerPlans)
-            {
-                if (!_hotkeyManager.RegisterHotKey(_trayMenu.MenuItems.Count, (int)(Keys.D1 + _trayMenu.MenuItems.Count)))
-                {
-                    MessageBox.Show($"Couldn't register hotkey for profile at index {_trayMenu.MenuItems.Count}");
-                }
-
-                _trayMenu.MenuItems.Add($"{_trayMenu.MenuItems.Count + 1}: {powerPlan.Name}", OnSelectPowerPlan);
-            }
             _trayMenu.MenuItems.Add("-");
             _trayMenu.MenuItems.Add("Power Options", (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
             _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
@@ -88,21 +86,86 @@ namespace PowerPlanSwitcher
             Application.Run(new SysTrayApp());
         }
 
+        private void InitializePowerPlans()
+        {
+            List<MenuItem> _cpuItems = new List<MenuItem>();
+            _hotkeyManager = new HotkeyManager(OnHotKeyPressed);
+
+            // create a menu item for each found power plan
+            foreach (var powerPlan in _powerPlanManager.PowerPlans)
+            {
+                if (!_hotkeyManager.RegisterHotKey(_cpuItems.Count, (int)(Keys.D1 + _cpuItems.Count)))
+                {
+                    MessageBox.Show($"Couldn't register hotkey for profile at index {_cpuItems.Count}");
+                }
+
+                _cpuItems.Add(new MenuItem($"{_cpuItems.Count + 1}: {powerPlan.Name}", OnSelectPowerPlan));
+            }
+
+            _trayMenu.MenuItems.Add("CPU Profiles", _cpuItems.ToArray());
+        }
+
+        private void InitializeGpuConfigs()
+        {
+            GpuConfigList gpuConfigs;
+
+            try
+            {
+                gpuConfigs = JsonConvert.DeserializeObject<GpuConfigList>(File.ReadAllText("config.json"));
+            }
+            catch (FileNotFoundException)
+            {
+                // No gpu config; this is fine
+                return;
+            }
+
+            foreach (var gpuConfig in gpuConfigs.Gpus)
+            {
+                switch (gpuConfig.Type)
+                {
+                    case GpuType.Nvml:
+                        NvmlManager nvmlManager = new NvmlManager(gpuConfig.Config);
+
+                        if (!nvmlManager.Initialize(out string errorMessage))
+                        {
+                            MessageBox.Show(errorMessage);
+                        }
+                        else
+                        {
+                            _gpuManagers.Add(nvmlManager);
+                        }
+                        break;
+                }
+            }
+
+            foreach (var manager in _gpuManagers)
+            {
+                IEnumerable<MenuItem> _gpuPowerLimits = manager.GetAvailablePowerLimits().Select(d => new MenuItem($"{(int)(100 * d)}%", OnSelectGpuPowerLimit));
+
+                if (_gpuPowerLimits.Any())
+                {
+                    _trayMenu.MenuItems.Add("-");
+                    _trayMenu.MenuItems.Add(manager.GetDeviceName(), _gpuPowerLimits.ToArray());
+                }
+            }
+        }
+
         private void NotifyIcon_Click(object sender, EventArgs e)
         {
             _powerPlanManager.LoadPowerPlans();
 
             var activePlanIndex = _powerPlanManager.GetIndexOfActivePlan();
-            for (int i = 0; i < _trayMenu.MenuItems.Count; i++)
+            for (int i = 0; i < _trayMenu.MenuItems[0].MenuItems.Count; i++)
             {
-                var item = _trayMenu.MenuItems[i];
-                if (i == activePlanIndex)
+                _trayMenu.MenuItems[0].MenuItems[i].Checked = (i == activePlanIndex);
+            }
+
+            for (int i = 1; i < _gpuManagers.Count + 1; ++i)
+            {
+                int activePowerLimitIndex = _gpuManagers[i - 1].GetActivePowerLimitIndex();
+                for (int j = 0; j < _trayMenu.MenuItems[2*i].MenuItems.Count; ++j)
                 {
-                    item.Checked = true;
-                }
-                else
-                {
-                    item.Checked = false;
+                    _trayMenu.MenuItems[2*i].MenuItems[j].Checked = (j == activePowerLimitIndex);
                 }
             }
         }
@@ -127,21 +190,34 @@ namespace PowerPlanSwitcher
         {
             if (sender is MenuItem menuItem)
             {
-                _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[menuItem.Index]);
-                _trayIcon.Text = _powerPlanManager.PowerPlans[menuItem.Index].Name;
-                _powerPlanManager.SetPowerPlan(menuItem.Index);
+                ChangePowerPlan(menuItem.Index);
+            }
+        }
+
+        private void OnSelectGpuPowerLimit(object sender, EventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                MenuItem parent = menuItem.Parent as MenuItem;
+                IGpuManager manager = _gpuManagers[(parent.Index / 2) - 1];
+                manager.SetPowerLimit(menuItem.Index);
             }
         }
 
         private void OnHotKeyPressed(int keyId)
         {
-            _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[keyId]);
-            _trayIcon.Text = _powerPlanManager.PowerPlans[keyId].Name;
-            _powerPlanManager.SetPowerPlan(keyId);
+            ChangePowerPlan(keyId);
 
             _trayIcon.BalloonTipTitle = "Power Plan Changed";
             _trayIcon.BalloonTipText = $"Switched to {_trayIcon.Text}";
             _trayIcon.ShowBalloonTip(2000);
+        }
+
+        private void ChangePowerPlan(int index)
+        {
+            _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[index]);
+            _trayIcon.Text = _powerPlanManager.PowerPlans[index].Name;
+            _powerPlanManager.SetPowerPlan(index);
         }
 
         private static void OnExit(object sender, EventArgs e)
@@ -153,6 +229,7 @@ namespace PowerPlanSwitcher
         {
             if (isDisposing)
             {
+                _gpuManagers.ForEach(gm => gm.Dispose());
                 _hotkeyManager?.Dispose();
                 _trayIcon?.Dispose();
             }
