@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -123,6 +124,16 @@ namespace PowerPlanSwitcher.Nvml
 
             _initialized = true;
 
+            if (_config.StartupPowerScaling.HasValue)
+            {
+                int index = Array.IndexOf(_config.AvailablePowerScaling, _config.StartupPowerScaling.Value);
+
+                if (index > -1)
+                {
+                    SetPowerLimit(index);
+                }
+            }
+
             errorMessage = String.Empty;
             return true;
         }
@@ -166,16 +177,39 @@ namespace PowerPlanSwitcher.Nvml
             return _config.AvailablePowerScaling;
         }
 
-        public bool SetPowerLimit(int powerLimitIndex)
+        public double SetPowerLimit(int powerLimitIndex)
         {
             EnsureInitialized();
 
             double scaling = _config.AvailablePowerScaling[powerLimitIndex];
+
+            return ApplyScaling(scaling);
+        }
+
+        public double CpuProfileChanged(int index)
+        {
+            if (_config.PlanAutoScaling.Any())
+            {
+                NvmlAutoScaling autoScaling = _config.PlanAutoScaling.FirstOrDefault(s => s.PlanIndex == index);
+
+                if (autoScaling != null)
+                {
+                    return ApplyScaling(autoScaling.Scaling);
+                }
+            }
+
+            return 0.0;
+        }
+
+        private double ApplyScaling(double scaling)
+        {
             uint newLimit = (uint)((_defaultPowerLimit / 1000) * scaling) * 1000;
 
             newLimit = Math.Min(Math.Max(newLimit, _minPowerLimit), _maxPowerLimit);
 
-            return NvmlDeviceSetPowerManagementLimit(_deviceHandle, newLimit).IsSuccess();
+            return NvmlDeviceSetPowerManagementLimit(_deviceHandle, newLimit).IsSuccess()
+                ? scaling
+                : 0.0;
         }
 
         private void EnsureInitialized()

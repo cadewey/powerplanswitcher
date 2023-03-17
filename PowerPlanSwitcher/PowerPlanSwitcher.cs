@@ -60,7 +60,6 @@ namespace PowerPlanSwitcher
             InitializeGpuConfigs();
             InitializeMiscMenuItems();
             
-
             // create systray icon
             _trayIcon = new NotifyIcon
             {
@@ -241,18 +240,35 @@ namespace PowerPlanSwitcher
 
         private void OnHotKeyPressed(int keyId)
         {
-            ChangePowerPlan(keyId);
-
-            _trayIcon.BalloonTipTitle = "Power Plan Changed";
-            _trayIcon.BalloonTipText = $"Switched to {_trayIcon.Text}";
-            _trayIcon.ShowBalloonTip(2000);
+            ChangePowerPlan(keyId, notify: true);
         }
 
-        private void ChangePowerPlan(int index)
+        private void ChangePowerPlan(int index, bool notify = false)
         {
             _trayIcon.Icon = GetIcon(_powerPlanManager.PowerPlans[index]);
             _trayIcon.Text = _powerPlanManager.PowerPlans[index].Name;
             _powerPlanManager.SetPowerPlan(index);
+
+            if (notify)
+            {
+                _trayIcon.BalloonTipTitle = "Power Plan Changed";
+                _trayIcon.BalloonTipText = $"Switched to {_trayIcon.Text} profile";
+            }
+
+            foreach (IGpuManager manager in _gpuManagers)
+            {
+                double newPowerLimit = manager.CpuProfileChanged(index);
+
+                if (notify && newPowerLimit > 0.0)
+                {
+                    _trayIcon.BalloonTipText += $"\n\n{manager.GetDeviceName()} power limit set to {(int)(newPowerLimit * 100)}%";
+                }
+            }
+            
+            if (notify)
+            {
+                _trayIcon.ShowBalloonTip(2000);
+            }
         }
 
         private static void OnExit(object sender, EventArgs e)

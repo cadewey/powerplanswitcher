@@ -13,6 +13,7 @@ namespace PowerPlanSwitcher
         double GetPowerLimit();
         int GetActivePowerLimitIndex();
         double[] GetAvailablePowerLimits();
-        bool SetPowerLimit(int powerLimitIndex);
+        double SetPowerLimit(int powerLimitIndex);
+        double CpuProfileChanged(int index);
     }
 }

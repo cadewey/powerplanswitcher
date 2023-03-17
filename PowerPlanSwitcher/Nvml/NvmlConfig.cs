@@ -8,6 +8,7 @@
 
     public class NvmlConfig
     {
+        public double? StartupPowerScaling { get; set; }
         public uint DeviceIndex { get; set; }
         public double[] AvailablePowerScaling { get; set; }
         public NvmlAutoScaling[] PlanAutoScaling { get; set; }
