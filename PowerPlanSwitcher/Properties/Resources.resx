@@ -123,14 +123,17 @@
   <data name="Powerplan" xml:space="preserve">
     <value>Power Plan</value>
   </data>
-  <data name="Update" xml:space="preserve">
-    <value>Update</value>
-  </data>
-  <data name="urlCheckUpdate" xml:space="preserve">
-    <value>http://therefactory.bplaced.net/projects-json/?column=version&amp;uuid=</value>
-  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="battery_512" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\battery-512.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CPU Profiles" xml:space="preserve">
+    <value>CPU Profiles</value>
+  </data>
+  <data name="Power Options" xml:space="preserve">
+    <value>Power Options</value>
+  </data>
+  <data name="Run at Startup" xml:space="preserve">
+    <value>Run at Startup</value>
   </data>
 </root>

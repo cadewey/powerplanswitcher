@@ -71,11 +71,29 @@ namespace PowerPlanSwitcher.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CPU Profiles.
+        /// </summary>
+        internal static string CPU_Profiles {
+            get {
+                return ResourceManager.GetString("CPU Profiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Exit.
         /// </summary>
         internal static string Exit {
             get {
                 return ResourceManager.GetString("Exit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Power Options.
+        /// </summary>
+        internal static string Power_Options {
+            get {
+                return ResourceManager.GetString("Power Options", resourceCulture);
             }
         }
         
@@ -89,20 +107,11 @@ namespace PowerPlanSwitcher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Update.
+        ///   Looks up a localized string similar to Run at Startup.
         /// </summary>
-        internal static string Update {
+        internal static string Run_at_Startup {
             get {
-                return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to http://therefactory.bplaced.net/projects-json/?column=version&amp;uuid=.
-        /// </summary>
-        internal static string urlCheckUpdate {
-            get {
-                return ResourceManager.GetString("urlCheckUpdate", resourceCulture);
+                return ResourceManager.GetString("Run at Startup", resourceCulture);
             }
         }
     }

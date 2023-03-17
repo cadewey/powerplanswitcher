@@ -29,6 +29,7 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using PowerPlanSwitcher.Properties;
 using PowerPlanSwitcher.Nvml;
+using Microsoft.Win32;
 
 #endregion
 
@@ -46,18 +47,19 @@ namespace PowerPlanSwitcher
 
         private readonly List<IGpuManager> _gpuManagers = new List<IGpuManager>();
 
+        private readonly string _appName = Assembly.GetExecutingAssembly().GetName().Name;
+        private readonly RegistryKey _startupRegKey = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
+        private readonly ResourceManager _rm = new ResourceManager("PowerPlanSwitcher.Properties.Resources", typeof(SysTrayApp).Assembly);
+
         public SysTrayApp()
         {
-            // init needed vars
             Console.WriteLine(@"The current culture is {0}", Thread.CurrentThread.CurrentUICulture);
-            var rm = new ResourceManager("PowerPlanSwitcher.Properties.Resources", typeof(SysTrayApp).Assembly);
 
             InitializePowerPlans();
             InitializeGpuConfigs();
-
-            _trayMenu.MenuItems.Add("-");
-            _trayMenu.MenuItems.Add("Power Options", (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
-            _trayMenu.MenuItems.Add(rm.GetString("Exit", Thread.CurrentThread.CurrentUICulture), OnExit);
+            InitializeMiscMenuItems();
+            
 
             // create systray icon
             _trayIcon = new NotifyIcon
@@ -102,7 +104,7 @@ namespace PowerPlanSwitcher
                 _cpuItems.Add(new MenuItem($"{_cpuItems.Count + 1}: {powerPlan.Name}", OnSelectPowerPlan));
             }
 
-            _trayMenu.MenuItems.Add("CPU Profiles", _cpuItems.ToArray());
+            _trayMenu.MenuItems.Add(GetStringResource("CPU Profiles"), _cpuItems.ToArray());
         }
 
         private void InitializeGpuConfigs()
@@ -148,6 +150,39 @@ namespace PowerPlanSwitcher
                     _trayMenu.MenuItems.Add(manager.GetDeviceName(), _gpuPowerLimits.ToArray());
                 }
             }
+        }
+
+        private void InitializeMiscMenuItems()
+        {
+            MenuItem startupItem = new MenuItem(GetStringResource("Run at Startup"), (sender, e) =>
+            {
+                if (sender is MenuItem menuItem)
+                {
+                    if (menuItem.Checked)
+                    {
+                        menuItem.Checked = false;
+                        _startupRegKey.DeleteValue(_appName);
+                    }
+                    else
+                    {
+                        menuItem.Checked = true;
+                        _startupRegKey.SetValue(_appName, Application.ExecutablePath);
+                    }
+                }
+            })
+            {
+                Checked = _startupRegKey.GetValue(_appName) != null
+            };
+
+            _trayMenu.MenuItems.Add("-");
+            _trayMenu.MenuItems.Add(startupItem);
+            _trayMenu.MenuItems.Add(GetStringResource("Power Options"), (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
+            _trayMenu.MenuItems.Add(GetStringResource("Exit"), OnExit);
+        }
+
+        private string GetStringResource(string s)
+        {
+            return _rm.GetString(s, Thread.CurrentThread.CurrentUICulture);
         }
 
         private void NotifyIcon_Click(object sender, EventArgs e)
