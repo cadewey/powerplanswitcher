@@ -292,7 +292,7 @@ namespace PowerPlanSwitcher.Nvidia
             // label14
             // 
             label14.AutoSize = true;
-            label14.Location = new System.Drawing.Point(65, 404);
+            label14.Location = new System.Drawing.Point(46, 403);
             label14.Name = "label14";
             label14.Size = new System.Drawing.Size(30, 13);
             label14.TabIndex = 29;
@@ -310,7 +310,7 @@ namespace PowerPlanSwitcher.Nvidia
             // label15
             // 
             label15.AutoSize = true;
-            label15.Location = new System.Drawing.Point(178, 404);
+            label15.Location = new System.Drawing.Point(168, 404);
             label15.Name = "label15";
             label15.Size = new System.Drawing.Size(44, 13);
             label15.TabIndex = 31;
@@ -477,7 +477,7 @@ namespace PowerPlanSwitcher.Nvidia
             this.prgGpuUtilization.InnerColor = System.Drawing.Color.Transparent;
             this.prgGpuUtilization.InnerMargin = 0;
             this.prgGpuUtilization.InnerWidth = -1;
-            this.prgGpuUtilization.Location = new System.Drawing.Point(37, 315);
+            this.prgGpuUtilization.Location = new System.Drawing.Point(19, 315);
             this.prgGpuUtilization.MarqueeAnimationSpeed = 0;
             this.prgGpuUtilization.Name = "prgGpuUtilization";
             this.prgGpuUtilization.OuterColor = System.Drawing.Color.Silver;
@@ -510,7 +510,7 @@ namespace PowerPlanSwitcher.Nvidia
             this.prgMemUtilization.InnerColor = System.Drawing.Color.Transparent;
             this.prgMemUtilization.InnerMargin = 0;
             this.prgMemUtilization.InnerWidth = -1;
-            this.prgMemUtilization.Location = new System.Drawing.Point(155, 315);
+            this.prgMemUtilization.Location = new System.Drawing.Point(145, 315);
             this.prgMemUtilization.MarqueeAnimationSpeed = 0;
             this.prgMemUtilization.Name = "prgMemUtilization";
             this.prgMemUtilization.OuterColor = System.Drawing.Color.Silver;
