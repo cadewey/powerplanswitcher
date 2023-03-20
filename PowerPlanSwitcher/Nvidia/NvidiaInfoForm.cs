@@ -18,19 +18,7 @@
 #region
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Resources;
-using System.Threading;
 using System.Windows.Forms;
-using Newtonsoft.Json;
-using PowerPlanSwitcher.Properties;
-using PowerPlanSwitcher.Nvidia;
-using Microsoft.Win32;
-using System.Timers;
 
 #endregion
 
@@ -53,12 +41,17 @@ namespace PowerPlanSwitcher.Nvidia
         private Label label7;
         private TextBox txtGpuClocks;
         private TextBox txtMemoryClocks;
+        private TextBox txtCurrentPowerDraw;
+        private TextBox txtCurrentPowerLimit;
+        private TextBox txtDefaultPowerLimit;
+        private CircularProgressBar.CircularProgressBar prgGpuUtilization;
+        private CircularProgressBar.CircularProgressBar prgMemUtilization;
+        private CircularProgressBar.CircularProgressBar progGpuTemp;
         private readonly System.Timers.Timer _pollingTimer = new System.Timers.Timer();
 
         internal NvidiaInfoForm(NvidiaManager manager)
         {
             _nvidiaManager = manager;
-
             InitializeComponent();
 
             CreateHandle();
@@ -79,6 +72,7 @@ namespace PowerPlanSwitcher.Nvidia
             txtPCIeInfo.Text = _nvidiaManager.PCIeLinkStatus;
             txtCudaCores.Text = _nvidiaManager.CoreCount.ToString();
             txtMemoryBusWidth.Text = $"{_nvidiaManager.MemoryBusWidth}-bit";
+            txtDefaultPowerLimit.Text = $"{_nvidiaManager.GetDefaultPowerLimit() / 1000} W";
         }
 
         private void PollDynamicValues()
@@ -87,6 +81,11 @@ namespace PowerPlanSwitcher.Nvidia
             (uint gpuCurrentClock, uint memCurrentClock) = _nvidiaManager.GetCurrentClockFrequencies();
             (uint gpuBaseClock, uint memBaseClock) = _nvidiaManager.GetBaseClockFrequencies();
             (uint gpuBoostClock, uint memBoostClock) = _nvidiaManager.GetBoostClockFrequencies();
+            uint powerLimit = _nvidiaManager.GetActivePowerLimit();
+            uint powerDraw = _nvidiaManager.GetCurrentPowerDraw();
+            NvmlUtilization utilization = _nvidiaManager.GetUtilization();
+            uint temp = _nvidiaManager.GetGpuTemperature();
+            uint tempThreshold = _nvidiaManager.GetGpuTemperatureThreshold();
 
             try
             {
@@ -94,9 +93,18 @@ namespace PowerPlanSwitcher.Nvidia
                 {
                     this.BeginInvoke((MethodInvoker)delegate
                     {
-                        txtMemoryUsage.Text = $"{memoryInfo.used / (1024 * 1024)} MB / {memoryInfo.total / (1024 * 1024)} MB";
+                        txtMemoryUsage.Text = $"{memoryInfo.Used / (1024 * 1024)} MB / {memoryInfo.Total / (1024 * 1024)} MB";
                         txtGpuClocks.Text = $"{gpuCurrentClock / 1000} MHz / {gpuBaseClock / 1000} MHz / {gpuBoostClock / 1000} MHz";
                         txtMemoryClocks.Text = $"{memCurrentClock / 1000} MHz / {memBaseClock / 1000} MHz / {memBoostClock / 1000} MHz";
+                        txtCurrentPowerLimit.Text = $"{powerLimit / 1000} W";
+                        txtCurrentPowerDraw.Text = $"{powerDraw / 1000} W";
+                        prgGpuUtilization.Value = (int)utilization.Gpu;
+                        prgGpuUtilization.Text = $"{utilization.Gpu}%";
+                        prgMemUtilization.Value = (int)utilization.Memory;
+                        prgMemUtilization.Text = $"{utilization.Memory}%";
+                        progGpuTemp.Text = $"{temp}°C";
+                        progGpuTemp.Maximum = (int)tempThreshold;
+                        progGpuTemp.Value = (int)temp;
                     });
                 }
             }
@@ -130,6 +138,14 @@ namespace PowerPlanSwitcher.Nvidia
             System.Windows.Forms.Label label5;
             System.Windows.Forms.Label label6;
             System.Windows.Forms.Label label8;
+            System.Windows.Forms.Label label9;
+            System.Windows.Forms.Label label10;
+            System.Windows.Forms.Label label12;
+            System.Windows.Forms.Label label13;
+            System.Windows.Forms.Label label14;
+            System.Windows.Forms.Label label16;
+            System.Windows.Forms.Label label15;
+            System.Windows.Forms.Label label11;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NvidiaInfoForm));
             this.txtDeviceName = new System.Windows.Forms.TextBox();
             this.txtVbiosVersion = new System.Windows.Forms.TextBox();
@@ -141,6 +157,12 @@ namespace PowerPlanSwitcher.Nvidia
             this.label7 = new System.Windows.Forms.Label();
             this.txtGpuClocks = new System.Windows.Forms.TextBox();
             this.txtMemoryClocks = new System.Windows.Forms.TextBox();
+            this.txtCurrentPowerDraw = new System.Windows.Forms.TextBox();
+            this.txtCurrentPowerLimit = new System.Windows.Forms.TextBox();
+            this.txtDefaultPowerLimit = new System.Windows.Forms.TextBox();
+            this.prgGpuUtilization = new CircularProgressBar.CircularProgressBar();
+            this.prgMemUtilization = new CircularProgressBar.CircularProgressBar();
+            this.progGpuTemp = new CircularProgressBar.CircularProgressBar();
             lblName = new System.Windows.Forms.Label();
             label1 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
@@ -149,6 +171,14 @@ namespace PowerPlanSwitcher.Nvidia
             label5 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
             label8 = new System.Windows.Forms.Label();
+            label9 = new System.Windows.Forms.Label();
+            label10 = new System.Windows.Forms.Label();
+            label12 = new System.Windows.Forms.Label();
+            label13 = new System.Windows.Forms.Label();
+            label14 = new System.Windows.Forms.Label();
+            label16 = new System.Windows.Forms.Label();
+            label15 = new System.Windows.Forms.Label();
+            label11 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblName
@@ -222,6 +252,69 @@ namespace PowerPlanSwitcher.Nvidia
             label8.Size = new System.Drawing.Size(33, 13);
             label8.TabIndex = 15;
             label8.Text = "Mem:";
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.Location = new System.Drawing.Point(9, 230);
+            label9.Name = "label9";
+            label9.Size = new System.Drawing.Size(102, 13);
+            label9.TabIndex = 17;
+            label9.Text = "Power Management";
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new System.Drawing.Point(16, 254);
+            label10.Name = "label10";
+            label10.Size = new System.Drawing.Size(35, 13);
+            label10.TabIndex = 18;
+            label10.Text = "Draw:";
+            // 
+            // label12
+            // 
+            label12.AutoSize = true;
+            label12.Location = new System.Drawing.Point(240, 254);
+            label12.Name = "label12";
+            label12.Size = new System.Drawing.Size(44, 13);
+            label12.TabIndex = 22;
+            label12.Text = "Default:";
+            // 
+            // label13
+            // 
+            label13.AutoSize = true;
+            label13.Location = new System.Drawing.Point(11, 290);
+            label13.Name = "label13";
+            label13.Size = new System.Drawing.Size(52, 13);
+            label13.TabIndex = 24;
+            label13.Text = "Utilization";
+            // 
+            // label14
+            // 
+            label14.AutoSize = true;
+            label14.Location = new System.Drawing.Point(65, 404);
+            label14.Name = "label14";
+            label14.Size = new System.Drawing.Size(30, 13);
+            label14.TabIndex = 29;
+            label14.Text = "GPU";
+            // 
+            // label16
+            // 
+            label16.AutoSize = true;
+            label16.Location = new System.Drawing.Point(297, 403);
+            label16.Name = "label16";
+            label16.Size = new System.Drawing.Size(34, 13);
+            label16.TabIndex = 33;
+            label16.Text = "Temp";
+            // 
+            // label15
+            // 
+            label15.AutoSize = true;
+            label15.Location = new System.Drawing.Point(178, 404);
+            label15.Name = "label15";
+            label15.Size = new System.Drawing.Size(44, 13);
+            label15.TabIndex = 31;
+            label15.Text = "Memory";
             // 
             // txtDeviceName
             // 
@@ -332,9 +425,164 @@ namespace PowerPlanSwitcher.Nvidia
             this.txtMemoryClocks.TabStop = false;
             this.txtMemoryClocks.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
+            // txtCurrentPowerDraw
+            // 
+            this.txtCurrentPowerDraw.BackColor = System.Drawing.Color.White;
+            this.txtCurrentPowerDraw.Location = new System.Drawing.Point(57, 251);
+            this.txtCurrentPowerDraw.Name = "txtCurrentPowerDraw";
+            this.txtCurrentPowerDraw.ReadOnly = true;
+            this.txtCurrentPowerDraw.Size = new System.Drawing.Size(65, 20);
+            this.txtCurrentPowerDraw.TabIndex = 19;
+            this.txtCurrentPowerDraw.TabStop = false;
+            this.txtCurrentPowerDraw.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label11
+            // 
+            label11.AutoSize = true;
+            label11.Location = new System.Drawing.Point(128, 254);
+            label11.Name = "label11";
+            label11.Size = new System.Drawing.Size(31, 13);
+            label11.TabIndex = 20;
+            label11.Text = "Limit:";
+            // 
+            // txtCurrentPowerLimit
+            // 
+            this.txtCurrentPowerLimit.BackColor = System.Drawing.Color.White;
+            this.txtCurrentPowerLimit.Location = new System.Drawing.Point(165, 251);
+            this.txtCurrentPowerLimit.Name = "txtCurrentPowerLimit";
+            this.txtCurrentPowerLimit.ReadOnly = true;
+            this.txtCurrentPowerLimit.Size = new System.Drawing.Size(65, 20);
+            this.txtCurrentPowerLimit.TabIndex = 21;
+            this.txtCurrentPowerLimit.TabStop = false;
+            this.txtCurrentPowerLimit.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // txtDefaultPowerLimit
+            // 
+            this.txtDefaultPowerLimit.BackColor = System.Drawing.Color.White;
+            this.txtDefaultPowerLimit.Location = new System.Drawing.Point(290, 251);
+            this.txtDefaultPowerLimit.Name = "txtDefaultPowerLimit";
+            this.txtDefaultPowerLimit.ReadOnly = true;
+            this.txtDefaultPowerLimit.Size = new System.Drawing.Size(65, 20);
+            this.txtDefaultPowerLimit.TabIndex = 23;
+            this.txtDefaultPowerLimit.TabStop = false;
+            this.txtDefaultPowerLimit.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // prgGpuUtilization
+            // 
+            this.prgGpuUtilization.AnimationFunction = WinFormAnimation.KnownAnimationFunctions.Liner;
+            this.prgGpuUtilization.AnimationSpeed = 0;
+            this.prgGpuUtilization.BackColor = System.Drawing.Color.Transparent;
+            this.prgGpuUtilization.Font = new System.Drawing.Font("Calibri", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.prgGpuUtilization.ForeColor = System.Drawing.Color.Black;
+            this.prgGpuUtilization.InnerColor = System.Drawing.Color.Transparent;
+            this.prgGpuUtilization.InnerMargin = 0;
+            this.prgGpuUtilization.InnerWidth = -1;
+            this.prgGpuUtilization.Location = new System.Drawing.Point(37, 315);
+            this.prgGpuUtilization.MarqueeAnimationSpeed = 0;
+            this.prgGpuUtilization.Name = "prgGpuUtilization";
+            this.prgGpuUtilization.OuterColor = System.Drawing.Color.Silver;
+            this.prgGpuUtilization.OuterMargin = -25;
+            this.prgGpuUtilization.OuterWidth = 26;
+            this.prgGpuUtilization.ProgressColor = System.Drawing.Color.ForestGreen;
+            this.prgGpuUtilization.ProgressWidth = 14;
+            this.prgGpuUtilization.SecondaryFont = new System.Drawing.Font("Microsoft Sans Serif", 36F);
+            this.prgGpuUtilization.Size = new System.Drawing.Size(85, 85);
+            this.prgGpuUtilization.StartAngle = 270;
+            this.prgGpuUtilization.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.prgGpuUtilization.SubscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.prgGpuUtilization.SubscriptMargin = new System.Windows.Forms.Padding(10, -35, 0, 0);
+            this.prgGpuUtilization.SubscriptText = "";
+            this.prgGpuUtilization.SuperscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.prgGpuUtilization.SuperscriptMargin = new System.Windows.Forms.Padding(10, 35, 0, 0);
+            this.prgGpuUtilization.SuperscriptText = "";
+            this.prgGpuUtilization.TabIndex = 28;
+            this.prgGpuUtilization.Text = "98%";
+            this.prgGpuUtilization.TextMargin = new System.Windows.Forms.Padding(2, 1, 0, 0);
+            this.prgGpuUtilization.Value = 68;
+            // 
+            // prgMemUtilization
+            // 
+            this.prgMemUtilization.AnimationFunction = WinFormAnimation.KnownAnimationFunctions.Liner;
+            this.prgMemUtilization.AnimationSpeed = 0;
+            this.prgMemUtilization.BackColor = System.Drawing.Color.Transparent;
+            this.prgMemUtilization.Font = new System.Drawing.Font("Calibri", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.prgMemUtilization.ForeColor = System.Drawing.Color.Black;
+            this.prgMemUtilization.InnerColor = System.Drawing.Color.Transparent;
+            this.prgMemUtilization.InnerMargin = 0;
+            this.prgMemUtilization.InnerWidth = -1;
+            this.prgMemUtilization.Location = new System.Drawing.Point(155, 315);
+            this.prgMemUtilization.MarqueeAnimationSpeed = 0;
+            this.prgMemUtilization.Name = "prgMemUtilization";
+            this.prgMemUtilization.OuterColor = System.Drawing.Color.Silver;
+            this.prgMemUtilization.OuterMargin = -25;
+            this.prgMemUtilization.OuterWidth = 26;
+            this.prgMemUtilization.ProgressColor = System.Drawing.Color.DodgerBlue;
+            this.prgMemUtilization.ProgressWidth = 14;
+            this.prgMemUtilization.SecondaryFont = new System.Drawing.Font("Microsoft Sans Serif", 36F);
+            this.prgMemUtilization.Size = new System.Drawing.Size(85, 85);
+            this.prgMemUtilization.StartAngle = 270;
+            this.prgMemUtilization.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.prgMemUtilization.SubscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.prgMemUtilization.SubscriptMargin = new System.Windows.Forms.Padding(10, -35, 0, 0);
+            this.prgMemUtilization.SubscriptText = "";
+            this.prgMemUtilization.SuperscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.prgMemUtilization.SuperscriptMargin = new System.Windows.Forms.Padding(10, 35, 0, 0);
+            this.prgMemUtilization.SuperscriptText = "";
+            this.prgMemUtilization.TabIndex = 30;
+            this.prgMemUtilization.Text = "98%";
+            this.prgMemUtilization.TextMargin = new System.Windows.Forms.Padding(2, 1, 0, 0);
+            this.prgMemUtilization.Value = 68;
+            // 
+            // progGpuTemp
+            // 
+            this.progGpuTemp.AnimationFunction = WinFormAnimation.KnownAnimationFunctions.Liner;
+            this.progGpuTemp.AnimationSpeed = 0;
+            this.progGpuTemp.BackColor = System.Drawing.Color.Transparent;
+            this.progGpuTemp.Font = new System.Drawing.Font("Calibri", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.progGpuTemp.ForeColor = System.Drawing.Color.Black;
+            this.progGpuTemp.InnerColor = System.Drawing.Color.Transparent;
+            this.progGpuTemp.InnerMargin = 0;
+            this.progGpuTemp.InnerWidth = -1;
+            this.progGpuTemp.Location = new System.Drawing.Point(270, 315);
+            this.progGpuTemp.MarqueeAnimationSpeed = 0;
+            this.progGpuTemp.Name = "progGpuTemp";
+            this.progGpuTemp.OuterColor = System.Drawing.Color.Silver;
+            this.progGpuTemp.OuterMargin = -25;
+            this.progGpuTemp.OuterWidth = 26;
+            this.progGpuTemp.ProgressColor = System.Drawing.Color.Firebrick;
+            this.progGpuTemp.ProgressWidth = 14;
+            this.progGpuTemp.SecondaryFont = new System.Drawing.Font("Microsoft Sans Serif", 36F);
+            this.progGpuTemp.Size = new System.Drawing.Size(85, 85);
+            this.progGpuTemp.StartAngle = 270;
+            this.progGpuTemp.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progGpuTemp.SubscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.progGpuTemp.SubscriptMargin = new System.Windows.Forms.Padding(10, -35, 0, 0);
+            this.progGpuTemp.SubscriptText = "";
+            this.progGpuTemp.SuperscriptColor = System.Drawing.Color.FromArgb(((int)(((byte)(166)))), ((int)(((byte)(166)))), ((int)(((byte)(166)))));
+            this.progGpuTemp.SuperscriptMargin = new System.Windows.Forms.Padding(10, 35, 0, 0);
+            this.progGpuTemp.SuperscriptText = "";
+            this.progGpuTemp.TabIndex = 32;
+            this.progGpuTemp.Text = "55°C";
+            this.progGpuTemp.TextMargin = new System.Windows.Forms.Padding(2, 1, 0, 0);
+            this.progGpuTemp.Value = 68;
+            // 
             // NvidiaInfoForm
             // 
             this.ClientSize = new System.Drawing.Size(382, 435);
+            this.Controls.Add(label16);
+            this.Controls.Add(this.progGpuTemp);
+            this.Controls.Add(label15);
+            this.Controls.Add(this.prgMemUtilization);
+            this.Controls.Add(label14);
+            this.Controls.Add(this.prgGpuUtilization);
+            this.Controls.Add(label13);
+            this.Controls.Add(this.txtDefaultPowerLimit);
+            this.Controls.Add(label12);
+            this.Controls.Add(this.txtCurrentPowerLimit);
+            this.Controls.Add(label11);
+            this.Controls.Add(this.txtCurrentPowerDraw);
+            this.Controls.Add(label10);
+            this.Controls.Add(label9);
             this.Controls.Add(this.txtMemoryClocks);
             this.Controls.Add(label8);
             this.Controls.Add(this.txtGpuClocks);

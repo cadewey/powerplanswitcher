@@ -49,9 +49,17 @@ namespace PowerPlanSwitcher.Nvidia
         NVML_CLOCK_ID_CUSTOMER_BOOST_MAX = 3
     }
 
-    internal enum NvmlTempteratureSensors
+    internal enum NvmlTempteratureSensor
     {
         NVML_TEMPERATURE_GPU = 0
+    }
+
+    internal enum NvmlTemperatureThreshold
+    {
+        NVML_TEMPERATURE_THRESHOLD_SHUTDOWN = 0,
+        NVML_TEMPERATURE_THRESHOLD_SLOWDOWN = 1,
+        NVML_TEMPERATURE_THRESHOLD_MEM_MAX = 2,
+        NVML_TEMPERATURE_THRESHOLD_GPU_MAX = 3
     }
 
     internal static class NvmlReturnExtensions
@@ -67,9 +75,16 @@ namespace PowerPlanSwitcher.Nvidia
     internal struct NvmlMemory
     {
         /* All values are in bytes */
-        public ulong total;
-        public ulong free;
-        public ulong used;
+        public ulong Total;
+        public ulong Free;
+        public ulong Used;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    internal struct NvmlUtilization
+    {
+        public uint Gpu;
+        public uint Memory;
     }
 
     internal class NvmlApi
@@ -92,13 +107,11 @@ namespace PowerPlanSwitcher.Nvidia
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetPowerManagementLimit")]
         internal static extern NvmlReturn NvmlDeviceGetPowerManagementLimit(IntPtr device, out uint limit /* mW */);
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetTemperature")]
-        internal static extern NvmlReturn NvmlDeviceGetTemperature(IntPtr device, NvmlTempteratureSensors sensorType, out uint temp /* degrees C */);
+        internal static extern NvmlReturn NvmlDeviceGetTemperature(IntPtr device, NvmlTempteratureSensor sensorType, out uint temp /* degrees C */);
+        [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetTemperatureThreshold")]
+        internal static extern NvmlReturn NvmlDeviceGetTemperatureThreshold(IntPtr device, NvmlTemperatureThreshold thresholdType, out uint temp /* degrees C */);
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetPowerUsage")]
         internal static extern NvmlReturn NvmlDeviceGetPowerUsage(IntPtr device, out uint power /* mW */);
-        [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetMaxClockInfo")]
-        internal static extern NvmlReturn NvmlDeviceGetMaxClockInfo(IntPtr device, NvmlClockType type, out uint clock /* MHz */);
-        [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetClock")]
-        internal static extern NvmlReturn NvmlDeviceGetClock(IntPtr device, NvmlClockType type, NvmlClockId clockId, out uint clock /* MHz */);
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetVbiosVersion")]
         internal static extern NvmlReturn NvmlDeviceGetVbiosVersion(IntPtr device, StringBuilder version, uint length);
         [DllImport("nvml.dll", EntryPoint = "nvmlSystemGetDriverVersion")]
@@ -113,6 +126,8 @@ namespace PowerPlanSwitcher.Nvidia
         internal static extern NvmlReturn NvmlDeviceGetMemoryBusWidth(IntPtr device, out uint busWidth);
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetMemoryInfo")]
         internal static extern NvmlReturn NvmlDeviceGetMemoryInfo(IntPtr device, out NvmlMemory memory);
+        [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetUtilizationRates")]
+        internal static extern NvmlReturn NvmlDeviceGetUtilizationRates(IntPtr device, out NvmlUtilization utilization);
 
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceSetPowerManagementLimit")]
         internal static extern NvmlReturn NvmlDeviceSetPowerManagementLimit(IntPtr device, uint limit /* mW */);

@@ -18,7 +18,7 @@ namespace PowerPlanSwitcher
         string DeviceName { get; }
 
         (InitializationResult Result, string Error) Initialize();
-        double GetPowerLimit();
+        uint GetActivePowerLimit();
         int GetActivePowerLimitIndex();
         double[] GetAvailablePowerLimits();
         double SetPowerLimit(int powerLimitIndex);

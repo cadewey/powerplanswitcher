@@ -137,7 +137,7 @@ namespace PowerPlanSwitcher.Nvidia
         public string PCIeLinkStatus => $"PCIe {_pcieLinkGeneration}.0 x{_pcieLinkWidth}";
         public uint MemoryBusWidth => _memoryBusWidth;
 
-        public double GetPowerLimit()
+        public uint GetActivePowerLimit()
         {
             EnsureInitialized();
 
@@ -167,6 +167,20 @@ namespace PowerPlanSwitcher.Nvidia
             EnsureInitialized();
 
             return _config.AvailablePowerScaling;
+        }
+
+        public uint GetDefaultPowerLimit() => _defaultPowerLimit;
+
+        public uint GetCurrentPowerDraw()
+        {
+            EnsureInitialized();
+
+            if (NvmlApi.NvmlDeviceGetPowerUsage(_nvmlDeviceHandle, out uint power).IsSuccess())
+            {
+                return power;
+            }
+
+            return 0;
         }
 
         public NvmlMemory GetMemoryInfo()
@@ -203,6 +217,42 @@ namespace PowerPlanSwitcher.Nvidia
             }
 
             return (0, 0);
+        }
+
+        public NvmlUtilization GetUtilization()
+        {
+            EnsureInitialized();
+
+            if (NvmlApi.NvmlDeviceGetUtilizationRates(_nvmlDeviceHandle, out NvmlUtilization utilization).IsSuccess())
+            {
+                return utilization;
+            }
+
+            return default(NvmlUtilization);
+        }
+
+        public uint GetGpuTemperature()
+        {
+            EnsureInitialized();
+
+            if (NvmlApi.NvmlDeviceGetTemperature(_nvmlDeviceHandle, NvmlTempteratureSensor.NVML_TEMPERATURE_GPU, out uint temp).IsSuccess())
+            {
+                return temp;
+            }
+
+            return 0;
+        }
+
+        public uint GetGpuTemperatureThreshold()
+        {
+            EnsureInitialized();
+
+            if (NvmlApi.NvmlDeviceGetTemperatureThreshold(_nvmlDeviceHandle, NvmlTemperatureThreshold.NVML_TEMPERATURE_THRESHOLD_GPU_MAX, out uint temp).IsSuccess())
+            {
+                return temp;
+            }
+
+            return 100;
         }
 
         public double SetPowerLimit(int powerLimitIndex)
