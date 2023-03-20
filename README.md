@@ -10,7 +10,23 @@ For example, you can configure a power saver plan that reduces the CPU speed to 
 
 Please note that the main and only purpose of this tool is to *switch* between plans and not to *configure* them. This has to be done beforehand in the Power Options menu in Windows.
 
-![](screenshot.png)
+## Keyboard shortcuts
+
+Power Plan Switcher will attempt to register global keyboard shortcuts for each of your power profiles when it starts up using the key combination <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>1-9</kbd>.
+The ordering of the shortcuts is based on the ordering of your profiles in the Windows power profile menu, and the indices are shown in the context menu as a prefix (see the screenshot below).
+
+Unfortunately, there's not a great way to re-order profiles. For now the easiest option is to re-name your profiles to reflect the order that you'd like, then set them up appropriately. Use
+[powrcfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options) to perform the renaming.
+
+## Screenshots
+
+![](screenshots/hover-text.png)
+
+![](screenshots/cpu-menu.png)
+
+![](screenshots/gpu-menu.png)
+
+![](screenshots/gpu-info.png)
 
 ## License
 
