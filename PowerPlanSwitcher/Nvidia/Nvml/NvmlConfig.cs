@@ -1,4 +1,4 @@
-﻿namespace PowerPlanSwitcher.Nvml
+﻿namespace PowerPlanSwitcher.Nvidia
 {
     public class NvmlAutoScaling
     {

@@ -7,7 +7,7 @@ namespace PowerPlanSwitcher
 {
     public enum GpuType
     {
-        Nvml
+        Nvidia
     }
 
     public class GpuConfig

@@ -137,17 +137,26 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="GpuConfig.cs" />
     <Compile Include="HotkeyManager.cs" />
     <Compile Include="IGpuManager.cs" />
-    <Compile Include="Nvml\NvmlConfig.cs" />
-    <Compile Include="Nvml\NvmlManager.cs" />
+    <Compile Include="Nvidia\NvApi\NvApi.cs" />
+    <Compile Include="Nvidia\Nvml\NvmlApi.cs" />
+    <Compile Include="Nvidia\Nvml\NvmlConfig.cs" />
+    <Compile Include="Nvidia\NvidiaManager.cs" />
     <Compile Include="PowerPlan.cs" />
     <Compile Include="PowerPlanManager.cs" />
+    <Compile Include="Nvidia\NvidiaInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="PowerPlanSwitcher.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Nvidia\NvidiaInfoForm.resx">
+      <DependentUpon>NvidiaInfoForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.de-AT.resx">
       <SubType>Designer</SubType>
     </EmbeddedResource>
