@@ -25,6 +25,7 @@ namespace PowerPlanSwitcher.Nvidia
 
         private bool _initialized = false;
         private readonly NvmlConfig _config;
+        private NvidiaInfoForm _infoForm;
 
         internal NvidiaManager(JObject configJson)
         {
@@ -281,9 +282,21 @@ namespace PowerPlanSwitcher.Nvidia
 
         public void ShowInfoForm()
         {
-            NvidiaInfoForm form = new NvidiaInfoForm(this);
-            form.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            form.ShowDialog();
+            if (_infoForm != null)
+            {
+                if (_infoForm.WindowState == System.Windows.Forms.FormWindowState.Minimized)
+                {
+                    _infoForm.WindowState = System.Windows.Forms.FormWindowState.Normal;
+                    _infoForm.Activate();       
+                }
+
+                return;
+            }
+
+            _infoForm = new NvidiaInfoForm(this);
+            _infoForm.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            _infoForm.FormClosed += (sender, e) => _infoForm = null;
+            _infoForm.ShowDialog();
         }
 
         private double ApplyScaling(double scaling)
