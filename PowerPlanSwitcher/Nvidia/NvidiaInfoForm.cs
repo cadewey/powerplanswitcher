@@ -27,18 +27,14 @@ namespace PowerPlanSwitcher.Nvidia
     internal class NvidiaInfoForm : Form
     {
         #region Designer generated code
+
         private TextBox txtDeviceName;
-
-        #endregion
-
         private TextBox txtVbiosVersion;
         private TextBox txtDriverVersion;
         private TextBox txtPCIeInfo;
         private TextBox txtCudaCores;
         private TextBox txtMemoryUsage;
         private TextBox txtMemoryBusWidth;
-        private readonly NvidiaManager _nvidiaManager;
-        private Label label7;
         private TextBox txtGpuClocks;
         private TextBox txtMemoryClocks;
         private TextBox txtCurrentPowerDraw;
@@ -47,6 +43,10 @@ namespace PowerPlanSwitcher.Nvidia
         private CircularProgressBar.CircularProgressBar prgGpuUtilization;
         private CircularProgressBar.CircularProgressBar prgMemUtilization;
         private CircularProgressBar.CircularProgressBar progGpuTemp;
+
+        #endregion
+
+        private readonly NvidiaManager _nvidiaManager;
         private readonly System.Timers.Timer _pollingTimer = new System.Timers.Timer();
 
         internal NvidiaInfoForm(NvidiaManager manager)
@@ -145,6 +145,7 @@ namespace PowerPlanSwitcher.Nvidia
             System.Windows.Forms.Label label14;
             System.Windows.Forms.Label label16;
             System.Windows.Forms.Label label15;
+            System.Windows.Forms.Label label7;
             System.Windows.Forms.Label label11;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NvidiaInfoForm));
             this.txtDeviceName = new System.Windows.Forms.TextBox();
@@ -154,7 +155,6 @@ namespace PowerPlanSwitcher.Nvidia
             this.txtCudaCores = new System.Windows.Forms.TextBox();
             this.txtMemoryUsage = new System.Windows.Forms.TextBox();
             this.txtMemoryBusWidth = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
             this.txtGpuClocks = new System.Windows.Forms.TextBox();
             this.txtMemoryClocks = new System.Windows.Forms.TextBox();
             this.txtCurrentPowerDraw = new System.Windows.Forms.TextBox();
@@ -178,6 +178,7 @@ namespace PowerPlanSwitcher.Nvidia
             label14 = new System.Windows.Forms.Label();
             label16 = new System.Windows.Forms.Label();
             label15 = new System.Windows.Forms.Label();
+            label7 = new System.Windows.Forms.Label();
             label11 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
@@ -396,12 +397,12 @@ namespace PowerPlanSwitcher.Nvidia
             // 
             // label7
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(16, 166);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(33, 13);
-            this.label7.TabIndex = 13;
-            this.label7.Text = "GPU:";
+            label7.AutoSize = true;
+            label7.Location = new System.Drawing.Point(16, 166);
+            label7.Name = "label7";
+            label7.Size = new System.Drawing.Size(33, 13);
+            label7.TabIndex = 13;
+            label7.Text = "GPU:";
             // 
             // txtGpuClocks
             // 
@@ -586,7 +587,7 @@ namespace PowerPlanSwitcher.Nvidia
             this.Controls.Add(this.txtMemoryClocks);
             this.Controls.Add(label8);
             this.Controls.Add(this.txtGpuClocks);
-            this.Controls.Add(this.label7);
+            this.Controls.Add(label7);
             this.Controls.Add(label6);
             this.Controls.Add(this.txtMemoryBusWidth);
             this.Controls.Add(this.txtMemoryUsage);
