@@ -315,6 +315,7 @@ namespace PowerPlanSwitcher
         {
             if (isDisposing)
             {
+                _startupRegKey?.Dispose();
                 _gpuManagers.ForEach(gm => gm.Dispose());
                 _hotkeyManager?.Dispose();
                 _trayIcon?.Dispose();
