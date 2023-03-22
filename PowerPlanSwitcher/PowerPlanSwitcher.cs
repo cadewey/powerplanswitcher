@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with PowerPlanSwitcher.  If not, see <http://www.gnu.org/licenses/>.
 
-#region
-
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -24,15 +22,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Resources;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using Newtonsoft.Json;
-using PowerPlanSwitcher.Properties;
-using PowerPlanSwitcher.Nvidia;
 using Microsoft.Win32;
-using System.Text;
-
-#endregion
+using Newtonsoft.Json;
+using PowerPlanSwitcher.Nvidia;
+using PowerPlanSwitcher.Properties;
 
 namespace PowerPlanSwitcher
 {

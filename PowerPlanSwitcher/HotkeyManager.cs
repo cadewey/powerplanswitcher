@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PowerPlanSwitcher
@@ -63,11 +59,7 @@ namespace PowerPlanSwitcher
 
         public void Dispose()
         {
-            foreach (int id in _registrationIds)
-            {
-                UnregisterHotKey(this.Handle, id);
-            }
-
+            _registrationIds?.ForEach(id => UnregisterHotKey(this.Handle, id));
             DestroyHandle();
         }
     }

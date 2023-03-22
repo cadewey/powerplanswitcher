@@ -15,13 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with PowerPlanSwitcher.  If not, see <http://www.gnu.org/licenses/>.
 
-#region
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
-#endregion
 
 namespace PowerPlanSwitcher
 {
@@ -70,11 +66,7 @@ namespace PowerPlanSwitcher
         internal List<PowerPlan> PowerPlans { get; set; }
         internal PowerPlan ActivePlan { get; set; }
         // index that points to currently active plan in guids and names arrays
-
-        internal int GetIndexOfActivePlan()
-        {
-            return PowerPlans.FindIndex(p => p.Guid == ActivePlan.Guid);
-        }
+        internal int GetIndexOfActivePlan() => PowerPlans.FindIndex(p => p.Guid == ActivePlan.Guid);
 
         internal void LoadPowerPlans()
         {
