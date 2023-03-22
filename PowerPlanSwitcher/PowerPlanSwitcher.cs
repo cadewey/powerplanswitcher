@@ -238,6 +238,12 @@ namespace PowerPlanSwitcher
             {
                 MenuItem parent = menuItem.Parent as MenuItem;
                 IGpuManager manager = _gpuManagers[(parent.Index / 2) - 1];
+
+                if (manager.GetActivePowerLimitIndex() == menuItem.Index)
+                {
+                    return;
+                }
+
                 manager.SetPowerLimit(menuItem.Index);
 
                 _trayIcon.Text = GetProfileHoverText(_powerPlanManager.ActivePlan.Name);
@@ -253,6 +259,11 @@ namespace PowerPlanSwitcher
 
         private void ChangePowerPlan(int index, bool notify = false)
         {
+            if (_powerPlanManager.GetIndexOfActivePlan() == index)
+            {
+                return;
+            }
+
             _trayIcon.Text = GetProfileHoverText(_powerPlanManager.PowerPlans[index].Name);
             _powerPlanManager.SetPowerPlan(index);
 
