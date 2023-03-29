@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
+using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,6 +14,28 @@ namespace PowerPlanSwitcher.Nvidia
 {
     internal class NvidiaManager : IGpuManager, IDisposable
     {
+        private class DriverVersionNumber
+        {
+            public int Major { get; private set; }
+            public int Minor { get; private set; }
+
+            public DriverVersionNumber(string versionString)
+            {
+                string[] parts = versionString.Split('.');
+                Major = int.Parse(parts[0]);
+                Minor = int.Parse(parts[1]);
+            }
+
+            public override string ToString() => $"{Major}.{Minor}";
+
+            public bool IsNewerThan(DriverVersionNumber other)
+            {
+                return other == null ||
+                    this.Major > other.Major ||
+                    (this.Major == other.Major && this.Minor > other.Minor);
+            }
+        }
+
         private IntPtr _nvmlDeviceHandle;
         private IntPtr _nvapiDeviceHandle;
 
@@ -24,16 +52,16 @@ namespace PowerPlanSwitcher.Nvidia
         private uint _maxPowerLimit;
 
         private bool _initialized = false;
-        private readonly NvmlConfig _config;
+        private readonly NvidiaConfig _config;
         private NvidiaInfoForm _infoForm;
 
         internal NvidiaManager(JObject configJson)
         {
-            _config = configJson.ToObject<NvmlConfig>();
+            _config = configJson.ToObject<NvidiaConfig>();
             
             if (_config == null)
             {
-                throw new ArgumentException($"Couldn't convert JObject to {nameof(NvmlConfig)}. JSON: {configJson.ToString(Formatting.None)}");
+                throw new ArgumentException($"Couldn't convert JObject to {nameof(NvidiaConfig)}. JSON: {configJson.ToString(Formatting.None)}");
             }
         }
 
@@ -269,7 +297,7 @@ namespace PowerPlanSwitcher.Nvidia
         {
             if (_config.PlanAutoScaling.Any())
             {
-                NvmlAutoScaling autoScaling = _config.PlanAutoScaling.FirstOrDefault(s => s.PlanIndex == index);
+                NvidiaAutoScaling autoScaling = _config.PlanAutoScaling.FirstOrDefault(s => s.PlanIndex == index);
 
                 if (autoScaling != null)
                 {
@@ -284,9 +312,9 @@ namespace PowerPlanSwitcher.Nvidia
         {
             if (_infoForm != null)
             {
-                if (_infoForm.WindowState == System.Windows.Forms.FormWindowState.Minimized)
+                if (_infoForm.WindowState == FormWindowState.Minimized)
                 {
-                    _infoForm.WindowState = System.Windows.Forms.FormWindowState.Normal;
+                    _infoForm.WindowState = FormWindowState.Normal;
                     _infoForm.Activate();       
                 }
 
@@ -294,9 +322,108 @@ namespace PowerPlanSwitcher.Nvidia
             }
 
             _infoForm = new NvidiaInfoForm(this);
-            _infoForm.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            _infoForm.StartPosition = FormStartPosition.CenterScreen;
             _infoForm.FormClosed += (sender, e) => _infoForm = null;
             _infoForm.ShowDialog();
+        }
+
+        public async void CheckForDriverUpdate()
+        {
+            if (String.IsNullOrEmpty(_config.DriverSearchUrl) || !Uri.TryCreate(_config.DriverSearchUrl, UriKind.Absolute, out _))
+            {
+                MessageBox.Show(@"DriverSearchUrl is blank or invalid. Please check your config.");
+                return;
+            }
+
+            HtmlAgilityPack.HtmlDocument doc = await new HtmlWeb().LoadFromWebAsync(_config.DriverSearchUrl);
+            HtmlNode latestDriver = doc.DocumentNode.Descendants("tr")
+                .Where(n => n.GetAttributeValue("id", "") == "driverList")
+                .Where(n => n.Descendants("a").Where(d => d.InnerText.Contains("GeForce")).Any())
+                .FirstOrDefault();
+
+            if (latestDriver != null)
+            {
+                DriverVersionNumber latestVersion = new DriverVersionNumber(latestDriver.Descendants("td").ElementAt(2).InnerText);
+                DriverVersionNumber currentDriver = new DriverVersionNumber(DriverVersion);
+                string driverDate = latestDriver.Descendants("td").ElementAt(3).InnerText;
+
+                if (latestVersion.IsNewerThan(currentDriver))
+                {
+                    DialogResult result = MessageBox.Show($"Version: {latestVersion}. Published: {driverDate}.\n\nWould you like to download it now?", "New Driver Available", MessageBoxButtons.YesNo);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        DownloadDriver($"https:{latestDriver.Descendants("a").First().GetAttributeValue("href", "")}");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show($"You have the latest driver.\n\nVersion: {latestVersion}. Published: {driverDate}.", "Driver Up to Date");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Driver search failed");
+            }
+        }
+
+        private async void DownloadDriver(string downloadPageUrl)
+        {
+            HtmlAgilityPack.HtmlDocument downloadPage = await new HtmlWeb().LoadFromWebAsync(downloadPageUrl);
+            HtmlNode downloadButton = downloadPage.DocumentNode.Descendants("a").Where(n => n.GetAttributeValue("id", "") == "lnkDwnldBtn").First();
+            Regex urlParamRegex = new Regex(@"[?]url=(?<downloadPath>[^&]+)&", RegexOptions.Compiled);
+            Match m = urlParamRegex.Match(downloadButton.GetAttributeValue("href", ""));
+
+            if (m.Success)
+            {
+                using (WebClient client = new WebClient())
+                {
+                    NvidiaDriverDownloadForm downloadForm = new NvidiaDriverDownloadForm();
+                    string downloadUrl = $"https://us.download.nvidia.com{m.Groups["downloadPath"].Value}";
+                    string downloadsFolder = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Downloads");
+                    string localFilePath = Path.Combine(downloadsFolder, downloadUrl.Split('/').Last());
+
+                    client.DownloadProgressChanged += (sender, ev) =>
+                    {
+                        try
+                        {
+                            downloadForm.BeginInvoke((MethodInvoker)delegate { downloadForm.pbDownload.Value = ev.ProgressPercentage; });
+                        }
+                        catch { }
+                    };
+
+                    client.DownloadFileCompleted += (sender, ev) =>
+                    {
+                        try
+                        {
+                            downloadForm.BeginInvoke((MethodInvoker)delegate { downloadForm.Close(); });
+                            Process.Start("explorer.exe", $"/select,\"{localFilePath}\"");
+                        }
+                        catch { }
+                    };
+
+                    downloadForm.Shown += (o, e) =>
+                    {
+                        client.DownloadFileAsync(new Uri(downloadUrl), localFilePath);
+                    };
+
+                    downloadForm.btnCancel.Click += (o, e) =>
+                    {
+                        client.CancelAsync();
+
+                        try
+                        {
+                            File.Delete(localFilePath);
+                        }
+                        catch { }
+
+                        downloadForm.Close();
+                    };
+
+                    downloadForm.StartPosition = FormStartPosition.CenterScreen;
+                    downloadForm.ShowDialog();
+                }
+            }
         }
 
         private double ApplyScaling(double scaling)

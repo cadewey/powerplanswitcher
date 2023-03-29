@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2016  PowerPlanSwitcher
+﻿// Copyright (C) 2023  PowerPlanSwitcher
 // 
 // This file is part of PowerPlanSwitcher.
 // 

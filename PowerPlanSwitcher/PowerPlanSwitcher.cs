@@ -158,6 +158,7 @@ namespace PowerPlanSwitcher
                     _gpuSubEntries.Add(new MenuItem("-"));
                 }
 
+                _gpuSubEntries.Add(new MenuItem("Check For Driver Update", (sender, e) => manager.CheckForDriverUpdate()));
                 _gpuSubEntries.Add(new MenuItem("Device Info", (sender, e) => manager.ShowInfoForm()));
 
                 trayMenu.MenuItems.Add("-");
@@ -167,28 +168,7 @@ namespace PowerPlanSwitcher
 
         private void InitializeMiscMenuItems(ContextMenu trayMenu)
         {
-            MenuItem startupItem = new MenuItem(GetStringResource("Run at Startup"), (sender, e) =>
-            {
-                if (sender is MenuItem menuItem)
-                {
-                    if (menuItem.Checked)
-                    {
-                        menuItem.Checked = false;
-                        _startupRegKey.DeleteValue(_appName);
-                    }
-                    else
-                    {
-                        menuItem.Checked = true;
-                        _startupRegKey.SetValue(_appName, Application.ExecutablePath);
-                    }
-                }
-            })
-            {
-                Checked = _startupRegKey.GetValue(_appName) != null
-            };
-
             trayMenu.MenuItems.Add("-");
-            trayMenu.MenuItems.Add(startupItem);
             trayMenu.MenuItems.Add(GetStringResource("Power Options"), (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
             trayMenu.MenuItems.Add("Reload", (sender, e) =>
             {

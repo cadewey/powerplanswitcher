@@ -131,6 +131,9 @@
     <Reference Include="CircularProgressBar, Version=2.8.0.16, Culture=neutral, PublicKeyToken=310fd07b25df79b3, processorArchitecture=MSIL">
       <HintPath>..\packages\CircularProgressBar.2.8.0.16\lib\net40\CircularProgressBar.dll</HintPath>
     </Reference>
+    <Reference Include="HtmlAgilityPack, Version=1.11.46.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.11.46\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -148,6 +151,9 @@
     <Compile Include="HotkeyManager.cs" />
     <Compile Include="IGpuManager.cs" />
     <Compile Include="Nvidia\NvApi\NvApi.cs" />
+    <Compile Include="Nvidia\NvidiaDriverDownloadForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Nvidia\Nvml\NvmlApi.cs" />
     <Compile Include="Nvidia\Nvml\NvmlConfig.cs" />
     <Compile Include="Nvidia\NvidiaManager.cs" />
@@ -160,6 +166,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Nvidia\NvidiaDriverDownloadForm.resx">
+      <DependentUpon>NvidiaDriverDownloadForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Nvidia\NvidiaInfoForm.resx">
       <DependentUpon>NvidiaInfoForm.cs</DependentUpon>
     </EmbeddedResource>

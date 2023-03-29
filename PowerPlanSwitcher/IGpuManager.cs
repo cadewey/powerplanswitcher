@@ -20,5 +20,6 @@ namespace PowerPlanSwitcher
         double SetPowerLimit(int powerLimitIndex);
         double CpuProfileChanged(int index);
         void ShowInfoForm();
+        void CheckForDriverUpdate();
     }
 }
