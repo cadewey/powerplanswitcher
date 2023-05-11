@@ -1,11 +1,12 @@
 {
+  "startupPlanIndex": 0,
   "gpus": [
     {
       "type": "nvidia",
       "config": {
         "deviceIndex": 0,
+        "driverSearchUrl": "https://www.nvidia.com/download/processFind.aspx?psid=107&pfid=877&osid=57&lid=1&whql=&lang=en-us&ctk=0&qnfslb=00&dtcid=1",
         "availablePowerScaling": [ 0.5, 0.75, 1.0 ],
-        "startupPowerScaling": 0.5,
         "planAutoScaling": [
           {
             "planIndex": 0,
@@ -13,7 +14,7 @@
           },
           {
             "planIndex": 1,
-            "scaling": 0.75
+            "scaling": 1.0
           },
           {
             "planIndex": 2,
@@ -21,6 +22,14 @@
           }
         ]
       }
+    }
+  ],
+  "processAutoSwitching": [
+    {
+      "planIndex": 1,
+      "processNames": [
+        "notepad.exe"
+      ]
     }
   ]
 }

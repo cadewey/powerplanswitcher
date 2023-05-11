@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Reflection;
 using System.Resources;
 using System.Text;
@@ -34,6 +35,13 @@ namespace PowerPlanSwitcher
 {
     public class SysTrayApp : Form
     {
+        private struct StoredPlanState
+        {
+            public int PlanIndex;
+            public string ChangedByProcessName;
+        }
+        
+        private Config _config;
         private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
         private readonly NotifyIcon _trayIcon;
 
@@ -44,6 +52,11 @@ namespace PowerPlanSwitcher
         private readonly RegistryKey _startupRegKey = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 
         private readonly ResourceManager _rm = new ResourceManager("PowerPlanSwitcher.Properties.Resources", typeof(SysTrayApp).Assembly);
+
+        ManagementEventWatcher _procStartWatcher = new ManagementEventWatcher(new WqlEventQuery("SELECT * FROM Win32_ProcessStartTrace"));
+        ManagementEventWatcher _procStopWatcher = new ManagementEventWatcher(new WqlEventQuery("SELECT * FROM Win32_ProcessStopTrace"));
+
+        private StoredPlanState _storedState = new StoredPlanState();
 
         public SysTrayApp()
         {
@@ -59,7 +72,9 @@ namespace PowerPlanSwitcher
             _trayIcon.MouseDown += NotifyIcon_Click;
             _trayIcon.MouseClick += NotifyIcon_MouseClick;
 
+            LoadConfig();
             InitializeMenus();
+            InitializeProcessAutoSwitching();
         }
 
 		[STAThread]
@@ -70,6 +85,66 @@ namespace PowerPlanSwitcher
             Application.Run(new SysTrayApp());
         }
 
+        private void LoadConfig()
+        {
+            try
+            {
+                _config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+            }
+            catch (FileNotFoundException)
+            {
+                // No gpu config; this is fine
+                return;
+            }
+        }
+
+        private void InitializeProcessAutoSwitching()
+        {
+            foreach (ProcessAutoSwitchingConfig conf in _config.ProcessAutoSwitching)
+            {
+                conf.ProcessNames = conf.ProcessNames.Select(n => n.ToLowerInvariant()).ToArray();
+            }
+
+            _procStartWatcher.EventArrived += (object sender, EventArrivedEventArgs args) =>
+            {
+                if (!String.IsNullOrEmpty(_storedState.ChangedByProcessName))
+                    return; // Don't change the plan if we already changed for some other process
+
+                string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
+
+                foreach (ProcessAutoSwitchingConfig conf in _config.ProcessAutoSwitching)
+                {
+                    if (conf.ProcessNames.Contains(procName))
+                    {
+                        _storedState = new StoredPlanState()
+                        {
+                            PlanIndex = _powerPlanManager.GetIndexOfActivePlan(),
+                            ChangedByProcessName = procName
+                        };
+
+                        ChangePowerPlan(conf.PlanIndex, true);
+                    }
+                }
+            };
+            
+            _procStopWatcher.EventArrived += (object sender, EventArrivedEventArgs args) =>
+            {
+                if (String.IsNullOrEmpty(_storedState.ChangedByProcessName))
+                    return; // Nothing to do
+
+                string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
+
+                if (_storedState.ChangedByProcessName == procName)
+                {
+                    ChangePowerPlan(_storedState.PlanIndex, true);
+                    _storedState.ChangedByProcessName = null;
+                }
+            };
+
+            _procStartWatcher.Start();
+            _procStopWatcher.Start();
+        }
+
         private void InitializeMenus()
         {
             ContextMenu trayMenu = new ContextMenu();
@@ -78,12 +153,22 @@ namespace PowerPlanSwitcher
             InitializeGpuConfigs(trayMenu);
             InitializeMiscMenuItems(trayMenu);
 
+            if (_config != null && _config.StartupPlanIndex >= 0)
+            {
+                ChangePowerPlan(_config.StartupPlanIndex);
+            }
+
             _trayIcon.ContextMenu = trayMenu;
             _trayIcon.Text = GetProfileHoverText(_powerPlanManager.ActivePlan.Name);
 
             foreach (IGpuManager manager in _gpuManagers)
             {
-                _trayIcon.SetText(_trayIcon.Text + GetGpuHoverText(manager.DeviceName, manager.GetAvailablePowerLimits()[manager.GetActivePowerLimitIndex()]));
+                int activeLimitIndex = manager.GetActivePowerLimitIndex();
+
+                if (activeLimitIndex > -1 && activeLimitIndex < manager.GetAvailablePowerLimits().Length)
+                {
+                    _trayIcon.SetText(_trayIcon.Text + GetGpuHoverText(manager.DeviceName, manager.GetAvailablePowerLimits()[activeLimitIndex]));
+                }
             }
         }
 
@@ -110,22 +195,13 @@ namespace PowerPlanSwitcher
 
         private void InitializeGpuConfigs(ContextMenu trayMenu)
         {
+            if (_config == null)
+                return;
+
             _gpuManagers?.ForEach(gpm => gpm.Dispose());
             _gpuManagers?.Clear();
 
-            GpuConfigList gpuConfigs;
-
-            try
-            {
-                gpuConfigs = JsonConvert.DeserializeObject<GpuConfigList>(File.ReadAllText("config.json"));
-            }
-            catch (FileNotFoundException)
-            {
-                // No gpu config; this is fine
-                return;
-            }
-
-            foreach (var gpuConfig in gpuConfigs.Gpus)
+            foreach (var gpuConfig in _config.Gpus)
             {
                 switch (gpuConfig.Type)
                 {
@@ -173,8 +249,10 @@ namespace PowerPlanSwitcher
             trayMenu.MenuItems.Add("Reload", (sender, e) =>
             {
                 _trayIcon.ContextMenu = null;
+                LoadConfig();
                 InitializeMenus();
-                _trayIcon.Notify("Reload Complete", "Power profiles and configuration reloaded successfully");
+                InitializeProcessAutoSwitching();
+                _trayIcon.Notify("Reload Complete", "Configuration reloaded successfully");
             });
 
             trayMenu.MenuItems.Add(GetStringResource("Exit"), OnExit);
@@ -291,6 +369,8 @@ namespace PowerPlanSwitcher
         {
             if (isDisposing)
             {
+                _procStartWatcher?.Dispose();
+                _procStopWatcher?.Dispose();
                 _startupRegKey?.Dispose();
                 _gpuManagers.ForEach(gm => gm.Dispose());
                 _hotkeyManager?.Dispose();

@@ -16,9 +16,4 @@ namespace PowerPlanSwitcher
         public GpuType Type { get; set; }
         public JObject Config { get; set; }
     }
-
-    public class GpuConfigList
-    {
-        public List<GpuConfig> Gpus { get; set; }
-    }
 }

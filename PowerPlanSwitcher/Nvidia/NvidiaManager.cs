@@ -79,16 +79,6 @@ namespace PowerPlanSwitcher.Nvidia
 
             _initialized = true;
 
-            if (_config.StartupPowerScaling.HasValue)
-            {
-                int index = Array.IndexOf(_config.AvailablePowerScaling, _config.StartupPowerScaling.Value);
-
-                if (index > -1)
-                {
-                    SetPowerLimit(index);
-                }
-            }
-
             return (result.Success ? InitializationResult.Ok : InitializationResult.Partial, result.Error);
         }
 
