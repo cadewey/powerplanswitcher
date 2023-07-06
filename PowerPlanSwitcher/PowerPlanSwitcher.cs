@@ -105,43 +105,57 @@ namespace PowerPlanSwitcher
                 conf.ProcessNames = conf.ProcessNames.Select(n => n.ToLowerInvariant()).ToArray();
             }
 
-            _procStartWatcher.EventArrived += (object sender, EventArrivedEventArgs args) =>
+            void startEvent(object sender, EventArrivedEventArgs args)
             {
-                if (!String.IsNullOrEmpty(_storedState.ChangedByProcessName))
-                    return; // Don't change the plan if we already changed for some other process
-
-                string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
-
-                foreach (ProcessAutoSwitchingConfig conf in _config.ProcessAutoSwitching)
+                // Don't change the plan if we already changed for some other process
+                if (String.IsNullOrEmpty(_storedState.ChangedByProcessName))
                 {
-                    if (conf.ProcessNames.Contains(procName))
-                    {
-                        _storedState = new StoredPlanState()
-                        {
-                            PlanIndex = _powerPlanManager.GetIndexOfActivePlan(),
-                            ChangedByProcessName = procName
-                        };
+                    string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
 
-                        ChangePowerPlan(conf.PlanIndex, true);
+                    foreach (ProcessAutoSwitchingConfig conf in _config.ProcessAutoSwitching)
+                    {
+                        if (conf.ProcessNames.Contains(procName))
+                        {
+                            _storedState = new StoredPlanState()
+                            {
+                                PlanIndex = _powerPlanManager.GetIndexOfActivePlan(),
+                                ChangedByProcessName = procName
+                            };
+
+                            ChangePowerPlan(conf.PlanIndex, true);
+                        }
                     }
                 }
+
+                // Explicitly dispose because in the path where we're not doing anything these WMI objects actually won't get marked for collection
+                // https://social.msdn.microsoft.com/Forums/en-US/158d5f4b-1238-4854-a66c-b51e37550c52/memory-leak-in-wmi-when-querying-event-logs?forum=netfxbcl
+                args.NewEvent.Dispose();
             };
             
-            _procStopWatcher.EventArrived += (object sender, EventArrivedEventArgs args) =>
+            void stopEvent(object sender, EventArrivedEventArgs args)
             {
-                if (String.IsNullOrEmpty(_storedState.ChangedByProcessName))
-                    return; // Nothing to do
-
-                string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
-
-                if (_storedState.ChangedByProcessName == procName)
+                if (!String.IsNullOrEmpty(_storedState.ChangedByProcessName))
                 {
-                    ChangePowerPlan(_storedState.PlanIndex, true);
-                    _storedState.ChangedByProcessName = null;
+                    string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
+
+                    if (_storedState.ChangedByProcessName == procName)
+                    {
+                        ChangePowerPlan(_storedState.PlanIndex, true);
+                        _storedState.ChangedByProcessName = null;
+                    }
                 }
+
+                // Explicitly dispose because in the path where we're not doing anything these WMI objects actually won't get marked for collection
+                // https://social.msdn.microsoft.com/Forums/en-US/158d5f4b-1238-4854-a66c-b51e37550c52/memory-leak-in-wmi-when-querying-event-logs?forum=netfxbcl
+                args.NewEvent.Dispose();
             };
 
+            _procStartWatcher.EventArrived -= startEvent;
+            _procStartWatcher.EventArrived += startEvent;
             _procStartWatcher.Start();
+
+            _procStopWatcher.EventArrived -= stopEvent;
+            _procStopWatcher.EventArrived += stopEvent;
             _procStopWatcher.Start();
         }
 
@@ -304,6 +318,7 @@ namespace PowerPlanSwitcher
         {
             if (sender is MenuItem menuItem)
             {
+                _storedState.ChangedByProcessName = null;
                 ChangePowerPlan(menuItem.Index);
             }
         }
@@ -331,7 +346,11 @@ namespace PowerPlanSwitcher
             }
         }
 
-        private void OnHotKeyPressed(int keyId) => ChangePowerPlan(keyId, notify: true);
+        private void OnHotKeyPressed(int keyId)
+        {
+            _storedState.ChangedByProcessName = null;
+            ChangePowerPlan(keyId, notify: true);
+        }
 
         private void ChangePowerPlan(int index, bool notify = false)
         {
