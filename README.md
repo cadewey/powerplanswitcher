@@ -1,4 +1,4 @@
-# Power Plan Switcher ![appicon](PowerPlanSwitcher/battery.ico) <a href="https://www.youtube.com/channel/UCShL6kEbNc02XjA89zsrtDQ"><img src="http://therefactory.bplaced.net/img/youtube_hover.png" height="32px" align="right"></a>
+# Power Plan Switcher ![appicon](PowerPlanSwitcher/battery.ico) 
 
 *Switching between power plans on Windows was never easier.*
 
@@ -12,8 +12,6 @@ For example, you can configure a power saver plan that reduces the CPU speed to 
 
 Please note that the main and only purpose of this tool is to *switch* between plans and not to *configure* them. This has to be done beforehand in the Power Options menu in Windows.
 
-You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for the latest news on this and other projects of mine.
-
 ![](screenshot.png)
 
 ## Download
@@ -24,7 +22,7 @@ You can follow me on my <a href="https://goo.gl/U0x1Fy">development blog</a> for
 
 ## License
 
-Copyright &copy; 2016 Christian DeTamble
+Copyright &copy; 2016 MouthlessGames
 
 Licensed under the GNU General Public License, Version 3.0. See [LICENSE](LICENSE) for details.
 
@@ -36,6 +34,6 @@ http://tango.freedesktop.org/The_People
 
 ***
 
-Crafted with &hearts; in <a href="http://goo.gl/KvKHze">The Refactory</a> in Ebensee 2016.
+Crafted with &hearts; in 2016.
 
 (My software is and stays open source, free of charge and ad-free)
