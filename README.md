@@ -35,5 +35,3 @@ http://tango.freedesktop.org/The_People
 ***
 
 Crafted with &hearts; in 2016.
-
-(My software is and stays open source, free of charge and ad-free)
