@@ -2,9 +2,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
+using System.Net.Http.Handlers;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
@@ -366,14 +369,16 @@ namespace PowerPlanSwitcher.Nvidia
 
             if (m.Success)
             {
-                using (WebClient client = new WebClient())
-                {
-                    NvidiaDriverDownloadForm downloadForm = new NvidiaDriverDownloadForm();
-                    string downloadUrl = $"https://us.download.nvidia.com{m.Groups["downloadPath"].Value}";
-                    string downloadsFolder = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Downloads");
-                    string localFilePath = Path.Combine(downloadsFolder, downloadUrl.Split('/').Last());
+                string downloadUrl = $"https://us.download.nvidia.com{m.Groups["downloadPath"].Value}";
+                string downloadsFolder = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Downloads");
+                string localFilePath = Path.Combine(downloadsFolder, downloadUrl.Split('/').Last());
 
-                    client.DownloadProgressChanged += (sender, ev) =>
+                using (var clientHandler = new HttpClientHandler() { AllowAutoRedirect = true })
+                using (var progressHandler = new ProgressMessageHandler(clientHandler))
+                using (var cancellationSource = new CancellationTokenSource())
+                using (var downloadForm = new NvidiaDriverDownloadForm())
+                {
+                    progressHandler.HttpReceiveProgress += (sender, ev) =>
                     {
                         try
                         {
@@ -382,32 +387,37 @@ namespace PowerPlanSwitcher.Nvidia
                         catch { }
                     };
 
-                    client.DownloadFileCompleted += (sender, ev) =>
+                    downloadForm.Shown += async (o, e) =>
                     {
                         try
                         {
+                            var cancellationToken = cancellationSource.Token;
+                            using (HttpClient httpClient = new HttpClient(progressHandler, disposeHandler: false))
+                            using (HttpResponseMessage result = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, downloadUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                            using (Stream responseStream = await result.Content.ReadAsStreamAsync())
+                            using (var fs = new FileStream(localFilePath, FileMode.CreateNew))
+                            {
+                                await responseStream.CopyToAsync(fs, bufferSize: 81920, cancellationToken);
+                            }
+
                             downloadForm.BeginInvoke((MethodInvoker)delegate { downloadForm.Close(); });
                             Process.Start("explorer.exe", $"/select,\"{localFilePath}\"");
                         }
-                        catch { }
-                    };
+                        catch (TaskCanceledException)
+                        {
+                            try
+                            {
+                                File.Delete(localFilePath);
+                            }
+                            catch { }
 
-                    downloadForm.Shown += (o, e) =>
-                    {
-                        client.DownloadFileAsync(new Uri(downloadUrl), localFilePath);
+                            downloadForm.Close();
+                        }
                     };
 
                     downloadForm.btnCancel.Click += (o, e) =>
                     {
-                        client.CancelAsync();
-
-                        try
-                        {
-                            File.Delete(localFilePath);
-                        }
-                        catch { }
-
-                        downloadForm.Close();
+                        cancellationSource.Cancel();
                     };
 
                     downloadForm.StartPosition = FormStartPosition.CenterScreen;
