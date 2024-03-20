@@ -1,5 +1,10 @@
 {
   "startupPlanIndex": 0,
+  "planIconColors": {
+    "0": "green",
+    "1": "yellow",
+    "2": "red"
+  },
   "gpus": [
     {
       "type": "nvidia",

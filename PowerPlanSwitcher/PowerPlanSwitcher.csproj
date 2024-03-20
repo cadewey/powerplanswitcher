@@ -9,7 +9,8 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PowerPlanSwitcher</RootNamespace>
     <AssemblyName>Power Plan Switcher</AssemblyName>
-    <ApplicationIcon>Resources\battery-512.ico</ApplicationIcon>
+    <ApplicationIcon>
+    </ApplicationIcon>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -244,7 +245,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\battery-512.ico" />
+    <EmbeddedResource Include="Resources\battery-512-green.ico" />
+    <EmbeddedResource Include="Resources\battery-512-red.ico" />
+    <EmbeddedResource Include="Resources\battery-512-yellow.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

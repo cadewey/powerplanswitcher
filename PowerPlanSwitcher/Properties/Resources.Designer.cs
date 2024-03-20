@@ -63,9 +63,29 @@ namespace PowerPlanSwitcher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        internal static System.Drawing.Icon battery_512 {
+        internal static System.Drawing.Icon battery_512_green {
             get {
-                object obj = ResourceManager.GetObject("battery_512", resourceCulture);
+                object obj = ResourceManager.GetObject("battery_512_green", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon battery_512_red {
+            get {
+                object obj = ResourceManager.GetObject("battery_512_red", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon battery_512_yellow {
+            get {
+                object obj = ResourceManager.GetObject("battery_512_yellow", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

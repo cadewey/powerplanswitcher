@@ -65,7 +65,7 @@ namespace PowerPlanSwitcher
             // create systray icon
             _trayIcon = new NotifyIcon
             {
-                Icon = new Icon(Resources.battery_512, 32, 32),
+                Icon = new Icon(Resources.battery_512_green, 32, 32),
                 Visible = true
             };
 
@@ -358,7 +358,8 @@ namespace PowerPlanSwitcher
             {
                 return;
             }
-            
+
+            _trayIcon.Icon = TryGetIconForPlan(index);
             _trayIcon.Text = GetProfileHoverText(_powerPlanManager.PowerPlans[index].Name);
             _powerPlanManager.SetPowerPlan(index);
 
@@ -380,6 +381,24 @@ namespace PowerPlanSwitcher
             {
                 _trayIcon.Notify("Power Plan Changed", notificationText.ToString());
             }
+        }
+
+        private Icon TryGetIconForPlan(int index)
+        {
+            if (_config.PlanIconColors?.TryGetValue(index.ToString(), out string color) == true)
+            {
+                switch (color)
+                {
+                    case "red":
+                        return Resources.battery_512_red;
+                    case "yellow":
+                        return Resources.battery_512_yellow;
+                    default:
+                        return Resources.battery_512_green;
+                }
+            }
+
+            return Resources.battery_512_green;
         }
 
         private static void OnExit(object sender, EventArgs e) => Application.Exit();
