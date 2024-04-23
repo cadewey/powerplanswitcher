@@ -8,6 +8,7 @@ namespace PowerPlanSwitcher
 {
     public class Config
     {
+        public bool EnableRPCServer { get; set; }
         public int StartupPlanIndex { get; set; }
         public Dictionary<string, string> PlanIconColors { get; set; }
         public List<GpuConfig> Gpus { get; set; }

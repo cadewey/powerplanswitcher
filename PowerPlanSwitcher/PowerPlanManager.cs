@@ -21,6 +21,26 @@ using System.Runtime.InteropServices;
 
 namespace PowerPlanSwitcher
 {
+    public enum PowerPlanChangedEventSource
+    {
+        TrayMenu,
+        HotKey,
+        AutoSwitch,
+        RPC
+    }
+
+    public class PowerPlanChangedEventArgs
+    {
+        public int Index { get; private set; }
+        public PowerPlanChangedEventSource Source { get; private set; }
+
+        public PowerPlanChangedEventArgs(int index, PowerPlanChangedEventSource source)
+        {
+            Index = index;
+            Source = source;
+        }
+    }
+
     public class PowerPlanManager
     {
         enum PowerDataAccessor : uint
@@ -56,6 +76,8 @@ namespace PowerPlanSwitcher
 
         [DllImport("powrprof.dll")]
         static extern uint PowerGetActiveScheme(IntPtr userRootPowerKey, ref IntPtr activePolicyGuid);
+
+        internal event Action<PowerPlanChangedEventArgs> PowerPlanChanged;
 
         internal PowerPlanManager()
         {
@@ -152,8 +174,14 @@ namespace PowerPlanSwitcher
         ///     Changes the system's power plan to the one specified by powerPlans[index].
         /// </summary>
         /// <param name="index"></param>
-        internal void SetPowerPlan(int index)
+        internal void SetPowerPlan(int index, PowerPlanChangedEventSource source)
         {
+            if (index < 0 || index >= PowerPlans.Count)
+                return;
+
+            if (ActivePlan == PowerPlans[index])
+                return;
+
             ActivePlan = PowerPlans[index];
             Guid planGuid = ActivePlan.Guid;
 
@@ -161,6 +189,9 @@ namespace PowerPlanSwitcher
             
             if (res != 0) 
                 throw new COMException($"Error occurred. Win32 error code: {res}");
+
+            if (PowerPlanChanged != null)
+                PowerPlanChanged(new PowerPlanChangedEventArgs(index, source));
         }
     }
 }

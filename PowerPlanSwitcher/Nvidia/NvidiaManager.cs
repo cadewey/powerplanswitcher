@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -299,6 +300,46 @@ namespace PowerPlanSwitcher.Nvidia
             }
 
             return 0.0;
+        }
+
+        public bool SetHdrMode(bool enabled)
+        {
+            uint displayIdCount = 1;
+            NvGpuDisplayIds[] displayIds = null;
+
+            if (!NvApi.GetAllDisplayIds(_nvapiDeviceHandle, displayIds, ref displayIdCount).IsSuccess())
+            {
+                return false;
+            }
+
+            Array.Resize(ref displayIds, (int)displayIdCount);
+            displayIds[0].Version = NvApi.MakeNvApiVersion<NvGpuDisplayIds>(3);
+
+            if (NvApi.GetAllDisplayIds(_nvapiDeviceHandle, displayIds, ref displayIdCount).IsSuccess())
+            {
+                IEnumerable<NvGpuDisplayIds> connectedDisplays = displayIds.Where(d => d.IsPhysicallyConnected);
+
+                foreach (NvGpuDisplayIds display in connectedDisplays)
+                {
+                    var colorData = new NvHdrColorDataV2()
+                    {
+                        Version = NvApi.MakeNvApiVersion<NvHdrColorDataV2>(2),
+                        Cmd = NvHdrCmd.NV_HDR_CMD_SET,
+                        StaticMetadataDescriptorId = NvStaticMetadataDescriptorId.NV_STATIC_METADATA_TYPE_1,
+                        HdrMode = enabled ? NvHdrMode.NV_HDR_MODE_UHDA : NvHdrMode.NV_HDR_MODE_SDR,
+                        DynamicRange = NvDynamicRange.NV_DYNAMIC_RANGE_AUTO
+                    };
+
+                    if (!NvApi.DispHdrColorMode(display.DisplayId, ref colorData).IsSuccess())
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public void ShowInfoForm()

@@ -1,4 +1,5 @@
 {
+  "enableRPCServer": false,
   "startupPlanIndex": 0,
   "planIconColors": {
     "0": "green",

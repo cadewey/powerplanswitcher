@@ -39,11 +39,13 @@ namespace PowerPlanSwitcher
         {
             public int PlanIndex;
             public string ChangedByProcessName;
+            public int ProcessCount;
         }
         
         private Config _config;
-        private readonly PowerPlanManager _powerPlanManager = new PowerPlanManager();
+        private readonly PowerPlanManager _powerPlanManager;
         private readonly NotifyIcon _trayIcon;
+        private RPCServer _rpcServer;
 
         private HotkeyManager _hotkeyManager;
         private readonly List<IGpuManager> _gpuManagers = new List<IGpuManager>();
@@ -62,6 +64,9 @@ namespace PowerPlanSwitcher
         {
             Console.WriteLine(@"The current culture is {0}", Thread.CurrentThread.CurrentUICulture);
 
+            _powerPlanManager = new PowerPlanManager();
+            _powerPlanManager.PowerPlanChanged += OnPowerPlanChanged;
+
             // create systray icon
             _trayIcon = new NotifyIcon
             {
@@ -75,6 +80,16 @@ namespace PowerPlanSwitcher
             LoadConfig();
             InitializeMenus();
             InitializeProcessAutoSwitching();
+
+            if (_config.EnableRPCServer)
+            {
+                _rpcServer = new RPCServer(_powerPlanManager);
+            }
+        }
+
+        internal void SetHdrMode(bool enabled)
+        {
+            _gpuManagers[0].SetHdrMode(enabled);
         }
 
 		[STAThread]
@@ -107,11 +122,11 @@ namespace PowerPlanSwitcher
 
             void startEvent(object sender, EventArrivedEventArgs args)
             {
+                string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
+
                 // Don't change the plan if we already changed for some other process
                 if (String.IsNullOrEmpty(_storedState.ChangedByProcessName))
                 {
-                    string procName = args.NewEvent.Properties["ProcessName"].Value.ToString().ToLowerInvariant();
-
                     foreach (ProcessAutoSwitchingConfig conf in _config.ProcessAutoSwitching)
                     {
                         if (conf.ProcessNames.Contains(procName))
@@ -119,12 +134,19 @@ namespace PowerPlanSwitcher
                             _storedState = new StoredPlanState()
                             {
                                 PlanIndex = _powerPlanManager.GetIndexOfActivePlan(),
-                                ChangedByProcessName = procName
+                                ChangedByProcessName = procName,
+                                ProcessCount = 1
                             };
 
-                            ChangePowerPlan(conf.PlanIndex, true);
+                            _powerPlanManager.SetPowerPlan(conf.PlanIndex, PowerPlanChangedEventSource.AutoSwitch);
                         }
                     }
+                }
+                else if (_storedState.ChangedByProcessName == procName)
+                {
+                    // Some processes can do weird things like spin up sub-processes with the same name for auto-update purposes
+                    // If we changed our plan due to a process starting up and then we see it again, add to the counter
+                    _storedState.ProcessCount++;
                 }
 
                 // Explicitly dispose because in the path where we're not doing anything these WMI objects actually won't get marked for collection
@@ -140,8 +162,12 @@ namespace PowerPlanSwitcher
 
                     if (_storedState.ChangedByProcessName == procName)
                     {
-                        ChangePowerPlan(_storedState.PlanIndex, true);
-                        _storedState.ChangedByProcessName = null;
+                        // Decrement the counter, and if we've hit 0 (i.e. all instances of the process have exited), switch the plan back
+                        if (--_storedState.ProcessCount == 0)
+                        {
+                            _powerPlanManager.SetPowerPlan(_storedState.PlanIndex, PowerPlanChangedEventSource.AutoSwitch);
+                            _storedState.ChangedByProcessName = null;
+                        }
                     }
                 }
 
@@ -161,7 +187,7 @@ namespace PowerPlanSwitcher
 
         private void InitializeMenus()
         {
-            ContextMenu trayMenu = new ContextMenu();
+            ContextMenuStrip trayMenu = new ContextMenuStrip();
 
             InitializePowerPlans(trayMenu);
             InitializeGpuConfigs(trayMenu);
@@ -169,10 +195,10 @@ namespace PowerPlanSwitcher
 
             if (_config != null && _config.StartupPlanIndex >= 0)
             {
-                ChangePowerPlan(_config.StartupPlanIndex);
+                _powerPlanManager.SetPowerPlan(_config.StartupPlanIndex, PowerPlanChangedEventSource.TrayMenu);
             }
 
-            _trayIcon.ContextMenu = trayMenu;
+            _trayIcon.ContextMenuStrip = trayMenu;
             _trayIcon.Text = GetProfileHoverText(_powerPlanManager.ActivePlan.Name);
 
             foreach (IGpuManager manager in _gpuManagers)
@@ -181,17 +207,17 @@ namespace PowerPlanSwitcher
 
                 if (activeLimitIndex > -1 && activeLimitIndex < manager.GetAvailablePowerLimits().Length)
                 {
-                    _trayIcon.SetText(_trayIcon.Text + GetGpuHoverText(manager.DeviceName, manager.GetAvailablePowerLimits()[activeLimitIndex]));
+                    _trayIcon.Text = _trayIcon.Text + GetGpuHoverText(manager.DeviceName, manager.GetAvailablePowerLimits()[activeLimitIndex]);
                 }
             }
         }
 
-        private void InitializePowerPlans(ContextMenu trayMenu)
+        private void InitializePowerPlans(ContextMenuStrip trayMenu)
         {
             _hotkeyManager?.Dispose();
             _hotkeyManager = new HotkeyManager(OnHotKeyPressed);
 
-            List<MenuItem> _cpuItems = new List<MenuItem>();
+            List<ToolStripMenuItem> _cpuItems = new List<ToolStripMenuItem>();
 
             // create a menu item for each found power plan
             foreach (var powerPlan in _powerPlanManager.PowerPlans)
@@ -201,13 +227,13 @@ namespace PowerPlanSwitcher
                     MessageBox.Show($"Couldn't register hotkey for profile at index {_cpuItems.Count}");
                 }
 
-                _cpuItems.Add(new MenuItem($"{_cpuItems.Count + 1}: {powerPlan.Name}", OnSelectPowerPlan));
+                _cpuItems.Add(new ToolStripMenuItem($"{_cpuItems.Count + 1}: {powerPlan.Name}", image: null, OnSelectPowerPlan));
             }
 
-            trayMenu.MenuItems.Add(GetStringResource("CPU Profiles"), _cpuItems.ToArray());
+            trayMenu.Items.Add(new ToolStripMenuItem("CPU Profiles", image: null, _cpuItems.ToArray()));
         }
 
-        private void InitializeGpuConfigs(ContextMenu trayMenu)
+        private void InitializeGpuConfigs(ContextMenuStrip trayMenu)
         {
             if (_config == null)
                 return;
@@ -241,35 +267,37 @@ namespace PowerPlanSwitcher
 
             foreach (var manager in _gpuManagers)
             {
-                List<MenuItem> _gpuSubEntries = manager.GetAvailablePowerLimits().Select(d => new MenuItem($"{(int)(100 * d)}%", OnSelectGpuPowerLimit)).ToList();
+                List<ToolStripMenuItem> _gpuSubEntries = manager.GetAvailablePowerLimits().Select(d => new ToolStripMenuItem($"{(int)(100 * d)}%", image: null, OnSelectGpuPowerLimit)).ToList();
+                ToolStripMenuItem gpuItem = new ToolStripMenuItem(manager.DeviceName);
 
                 if (_gpuSubEntries.Any())
                 {
-                    _gpuSubEntries.Add(new MenuItem("-"));
+                    gpuItem.DropDownItems.AddRange(_gpuSubEntries.ToArray());
+                    gpuItem.DropDownItems.Add("-");
                 }
 
-                _gpuSubEntries.Add(new MenuItem("Check For Driver Update", (sender, e) => manager.CheckForDriverUpdate()));
-                _gpuSubEntries.Add(new MenuItem("Device Info", (sender, e) => manager.ShowInfoForm()));
+                gpuItem.DropDownItems.Add(new ToolStripMenuItem("Check For Driver Update", image: null, (sender, e) => manager.CheckForDriverUpdate()));
+                gpuItem.DropDownItems.Add(new ToolStripMenuItem("Device Info", image: null, (sender, e) => manager.ShowInfoForm()));
 
-                trayMenu.MenuItems.Add("-");
-                trayMenu.MenuItems.Add(manager.DeviceName, _gpuSubEntries.ToArray());
+                trayMenu.Items.Add("-");
+                trayMenu.Items.Add(gpuItem);
             }
         }
 
-        private void InitializeMiscMenuItems(ContextMenu trayMenu)
+        private void InitializeMiscMenuItems(ContextMenuStrip trayMenu)
         {
-            trayMenu.MenuItems.Add("-");
-            trayMenu.MenuItems.Add(GetStringResource("Power Options"), (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
-            trayMenu.MenuItems.Add("Reload", (sender, e) =>
+            trayMenu.Items.Add("-");
+            trayMenu.Items.Add(GetStringResource("Power Options"), image: null, (sender, e) => System.Diagnostics.Process.Start("control", "powercfg.cpl"));
+            trayMenu.Items.Add("Reload", image: null, (sender, e) =>
             {
-                _trayIcon.ContextMenu = null;
+                _trayIcon.ContextMenuStrip = null;
                 LoadConfig();
                 InitializeMenus();
                 InitializeProcessAutoSwitching();
                 _trayIcon.Notify("Reload Complete", "Configuration reloaded successfully");
             });
 
-            trayMenu.MenuItems.Add(GetStringResource("Exit"), OnExit);
+            trayMenu.Items.Add(GetStringResource("Exit"), image: null, OnExit);
         }
 
         private string GetStringResource(string s) => _rm.GetString(s, Thread.CurrentThread.CurrentUICulture);
@@ -283,17 +311,24 @@ namespace PowerPlanSwitcher
             _powerPlanManager.LoadPowerPlans();
 
             var activePlanIndex = _powerPlanManager.GetIndexOfActivePlan();
-            for (int i = 0; i < _trayIcon.ContextMenu.MenuItems[0].MenuItems.Count; i++)
+            var cpuItem = (ToolStripMenuItem)_trayIcon.ContextMenuStrip.Items[0];
+
+            for (int i = 0; i < cpuItem.DropDownItems.Count; i++)
             {
-                _trayIcon.ContextMenu.MenuItems[0].MenuItems[i].Checked = (i == activePlanIndex);
+                ((ToolStripMenuItem)cpuItem.DropDownItems[i]).Checked = (i == activePlanIndex);
             }
 
             for (int i = 1; i < _gpuManagers.Count + 1; ++i)
             {
                 int activePowerLimitIndex = _gpuManagers[i - 1].GetActivePowerLimitIndex();
-                for (int j = 0; j < _trayIcon.ContextMenu.MenuItems[2*i].MenuItems.Count; ++j)
+                var gpuItem = (ToolStripMenuItem)_trayIcon.ContextMenuStrip.Items[2 * i];
+
+                for (int j = 0; j < gpuItem.DropDownItems.Count; ++j)
                 {
-                    _trayIcon.ContextMenu.MenuItems[2*i].MenuItems[j].Checked = (j == activePowerLimitIndex);
+                    if (gpuItem.DropDownItems[j] is ToolStripMenuItem tsmi)
+                    {
+                        tsmi.Checked = (j == activePowerLimitIndex);
+                    }
                 }
             }
         }
@@ -314,34 +349,49 @@ namespace PowerPlanSwitcher
             base.OnLoad(e);
         }
 
+        private int IndexOfMenuItem(ToolStripMenuItem item, ToolStripItemCollection items)
+        {
+            for (int i = 0; i < items.Count; ++i)
+            {
+                if (item.Text == items[i].Text)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         private void OnSelectPowerPlan(object sender, EventArgs e)
         {
-            if (sender is MenuItem menuItem)
+            if (sender is ToolStripMenuItem menuItem)
             {
+                ToolStripMenuItem parent = menuItem.OwnerItem as ToolStripMenuItem;
                 _storedState.ChangedByProcessName = null;
-                ChangePowerPlan(menuItem.Index);
+                _powerPlanManager.SetPowerPlan(IndexOfMenuItem(menuItem, parent.DropDownItems), PowerPlanChangedEventSource.TrayMenu);
             }
         }
 
         private void OnSelectGpuPowerLimit(object sender, EventArgs e)
         {
-            if (sender is MenuItem menuItem)
+            if (sender is ToolStripMenuItem menuItem)
             {
-                MenuItem parent = menuItem.Parent as MenuItem;
-                IGpuManager manager = _gpuManagers[(parent.Index / 2) - 1];
+                ToolStripMenuItem parent = menuItem.OwnerItem as ToolStripMenuItem;
+                IGpuManager manager = _gpuManagers[(IndexOfMenuItem(parent, _trayIcon.ContextMenuStrip.Items) / 2) - 1];
+                int gpuMenuIndex = IndexOfMenuItem(menuItem, parent.DropDownItems);
 
-                if (manager.GetActivePowerLimitIndex() == menuItem.Index)
+                if (manager.GetActivePowerLimitIndex() == gpuMenuIndex)
                 {
                     return;
                 }
 
-                manager.SetPowerLimit(menuItem.Index);
+                manager.SetPowerLimit(gpuMenuIndex);
 
                 _trayIcon.Text = GetProfileHoverText(_powerPlanManager.ActivePlan.Name);
 
                 foreach (IGpuManager gpuManager in _gpuManagers)
                 {
-                    _trayIcon.SetText(_trayIcon.Text + GetGpuHoverText(gpuManager.DeviceName, gpuManager.GetAvailablePowerLimits()[gpuManager.GetActivePowerLimitIndex()]));
+                    _trayIcon.Text = _trayIcon.Text + GetGpuHoverText(gpuManager.DeviceName, gpuManager.GetAvailablePowerLimits()[gpuManager.GetActivePowerLimitIndex()]);
                 }
             }
         }
@@ -349,19 +399,14 @@ namespace PowerPlanSwitcher
         private void OnHotKeyPressed(int keyId)
         {
             _storedState.ChangedByProcessName = null;
-            ChangePowerPlan(keyId, notify: true);
+            _powerPlanManager.SetPowerPlan(keyId, PowerPlanChangedEventSource.HotKey);
         }
 
-        private void ChangePowerPlan(int index, bool notify = false)
+        private void OnPowerPlanChanged(PowerPlanChangedEventArgs args)
         {
-            if (_powerPlanManager.GetIndexOfActivePlan() == index)
-            {
-                return;
-            }
-
+            int index = args.Index;
             _trayIcon.Icon = TryGetIconForPlan(index);
             _trayIcon.Text = GetProfileHoverText(_powerPlanManager.PowerPlans[index].Name);
-            _powerPlanManager.SetPowerPlan(index);
 
             StringBuilder notificationText = new StringBuilder();
             notificationText.Append($"Switched to {_trayIcon.Text} profile");
@@ -372,12 +417,12 @@ namespace PowerPlanSwitcher
 
                 if (newPowerLimit > 0.0)
                 {
-                    _trayIcon.SetText(_trayIcon.Text + GetGpuHoverText(manager.DeviceName, newPowerLimit));
+                    _trayIcon.Text = _trayIcon.Text + GetGpuHoverText(manager.DeviceName, newPowerLimit);
                     notificationText.Append($"\n\n{manager.DeviceName} power limit set to {(int)(newPowerLimit * 100)}%");
                 }
             }
-            
-            if (notify)
+
+            if (args.Source != PowerPlanChangedEventSource.TrayMenu)
             {
                 _trayIcon.Notify("Power Plan Changed", notificationText.ToString());
             }
@@ -413,6 +458,7 @@ namespace PowerPlanSwitcher
                 _gpuManagers.ForEach(gm => gm.Dispose());
                 _hotkeyManager?.Dispose();
                 _trayIcon?.Dispose();
+                _rpcServer?.Dispose();
             }
 
             base.Dispose(isDisposing);

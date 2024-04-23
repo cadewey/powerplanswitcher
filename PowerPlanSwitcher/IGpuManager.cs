@@ -16,6 +16,7 @@ namespace PowerPlanSwitcher
         (InitializationResult Result, string Error) Initialize();
         uint GetActivePowerLimit();
         int GetActivePowerLimitIndex();
+        bool SetHdrMode(bool enabled);
         double[] GetAvailablePowerLimits();
         double SetPowerLimit(int powerLimitIndex);
         double CpuProfileChanged(int index);
